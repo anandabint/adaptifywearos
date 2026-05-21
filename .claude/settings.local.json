@@ -6,7 +6,8 @@
       "Bash(Write-Output \"Directory created\")",
       "Bash(./gradlew test *)",
       "Bash(xargs grep -h \"tests=\")",
-      "Bash(./gradlew assembleDebug)"
+      "Bash(./gradlew assembleDebug)",
+      "Bash(./gradlew assembleDebug --stacktrace)"
     ]
   }
 }

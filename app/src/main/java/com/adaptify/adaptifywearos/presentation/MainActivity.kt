@@ -48,11 +48,15 @@ import com.adaptify.adaptifywearos.stress.StressReading
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+import kotlin.math.sqrt
 import android.util.Log
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
+import com.adaptify.adaptifywearos.database.AdaptifyDatabase
+import com.adaptify.adaptifywearos.database.SensorLog
 
 class MainActivity : ComponentActivity() {
 
@@ -64,6 +68,7 @@ class MainActivity : ComponentActivity() {
     private val heartRateManager by lazy { HeartRateManager(applicationContext) }
 
     private val realtimeSender by lazy { AdaptifyRealtimeSender(applicationContext) }
+    private val database by lazy { AdaptifyDatabase.getInstance(applicationContext) }
     private val stressCalculator = StressCalculator()
     private val activityClassifier = ActivityClassifier()
 
@@ -158,6 +163,26 @@ class MainActivity : ComponentActivity() {
                     activityConfidence = activityReading.confidence,
                 )
                 realtimeSender.send(payload)
+
+                val accelMag = state.sensorSnapshot.accelerometer
+                    ?.let { sqrt(it.x * it.x + it.y * it.y + it.z * it.z) } ?: 0f
+                val gyroMag = state.sensorSnapshot.gyroscope
+                    ?.let { sqrt(it.x * it.x + it.y * it.y + it.z * it.z) } ?: 0f
+                lifecycleScope.launch(Dispatchers.IO) {
+                    database.sensorLogDao().insert(
+                        SensorLog(
+                            timestamp = System.currentTimeMillis(),
+                            heartRate = state.heartRateState.bpm ?: 0,
+                            steps = state.sensorSnapshot.steps ?: 0,
+                            stressIndex = state.stressReading.index,
+                            rmssd = null,
+                            accelerometerMagnitude = accelMag,
+                            gyroscopeMagnitude = gyroMag,
+                            activityMode = activityReading.mode.name,
+                            activityConfidence = activityReading.confidence,
+                        )
+                    )
+                }
 
             }
         }
