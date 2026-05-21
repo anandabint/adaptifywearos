@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(New-Item -ItemType Directory -Force \"C:\\\\android project\\\\adaptify wear os\\\\adaptifywearos\\\\app\\\\src\\\\test\\\\java\\\\com\\\\adaptify\\\\adaptifywearos\\\\classifier\")",
+      "Bash(Out-Null)",
+      "Bash(Write-Output \"Directory created\")",
+      "Bash(./gradlew test *)",
+      "Bash(xargs grep -h \"tests=\")",
+      "Bash(./gradlew assembleDebug)"
+    ]
+  }
+}

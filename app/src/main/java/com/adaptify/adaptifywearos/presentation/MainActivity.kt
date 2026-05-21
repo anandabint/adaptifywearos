@@ -42,6 +42,7 @@ import com.adaptify.adaptifywearos.presentation.theme.AdaptifyWearOsTheme
 import com.adaptify.adaptifywearos.sensor.SensorHandler
 import com.adaptify.adaptifywearos.sensor.SensorSnapshot
 import com.adaptify.adaptifywearos.sensor.Vector3Sample
+import com.adaptify.adaptifywearos.classifier.ActivityClassifier
 import com.adaptify.adaptifywearos.stress.StressCalculator
 import com.adaptify.adaptifywearos.stress.StressReading
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,6 +65,7 @@ class MainActivity : ComponentActivity() {
 
     private val realtimeSender by lazy { AdaptifyRealtimeSender(applicationContext) }
     private val stressCalculator = StressCalculator()
+    private val activityClassifier = ActivityClassifier()
 
     private val permissionState = MutableStateFlow(PermissionState())
     private val dashboardState = MutableStateFlow(DashboardUiState())
@@ -143,15 +145,19 @@ class MainActivity : ComponentActivity() {
             }.collect { state ->
                 dashboardState.value = state
 
-                val json = """
-    {
-        "heartRate": ${state.heartRateState.bpm ?: 0},
-        "steps": ${state.sensorSnapshot.steps ?: 0},
-        "stress": ${state.stressReading.index}
-    }
-    """.trimIndent()
-
-                realtimeSender.sendPayload(json)
+                val activityReading = activityClassifier.classify(
+                    sensorSnapshot = state.sensorSnapshot,
+                    heartRateState = state.heartRateState,
+                    stressReading = state.stressReading,
+                )
+                val payload = AdaptifyRealtimePayload(
+                    heartRate = state.heartRateState.bpm ?: 0,
+                    steps = state.sensorSnapshot.steps ?: 0,
+                    stressIndex = state.stressReading.index,
+                    activityMode = activityReading.mode.name,
+                    activityConfidence = activityReading.confidence,
+                )
+                realtimeSender.send(payload)
 
             }
         }

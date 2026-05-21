@@ -12,6 +12,10 @@ class AdaptifyRealtimeSender(
     private val context: Context
 ) {
 
+    fun send(payload: AdaptifyRealtimePayload) {
+        sendPayload(payload.toJson())
+    }
+
     fun sendPayload(json: String) {
 
         CoroutineScope(Dispatchers.IO).launch {
