@@ -37,6 +37,10 @@
             android:exported="false"
             android:parentActivityName=".MainActivity" />
 
+        <activity
+            android:name=".MusicBrowserActivity"
+            android:exported="false" />
+
         <service
             android:name=".AdaptiveMusicService"
             android:exported="false"

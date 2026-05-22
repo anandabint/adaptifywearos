@@ -21,7 +21,7 @@ class ActivityClassifierTest {
         val result = classifier.classifyInternal(
             heartRateBpm = 120,
             stepsPerMinute = 120,
-            stressIndex = 40,
+            rmssd = 35.0,
             accelMagnitudeMs2 = 10f,
             gyroMagnitudeRads = 0.5f,
         )
@@ -30,12 +30,12 @@ class ActivityClassifierTest {
 
     @Test
     fun `exercise - high HR and accel above 1_5g returns EXERCISE`() {
-        // 16 m/s² ≈ 1.63g > 1.5g threshold
+        // 26 m/s² > 24.53 (1.5g net + 1g gravity) threshold
         val result = classifier.classifyInternal(
             heartRateBpm = 110,
             stepsPerMinute = 20,
-            stressIndex = 40,
-            accelMagnitudeMs2 = 16f,
+            rmssd = 35.0,
+            accelMagnitudeMs2 = 26f,
             gyroMagnitudeRads = 0.2f,
         )
         assertEquals(ActivityMode.EXERCISE, result.mode)
@@ -46,20 +46,20 @@ class ActivityClassifierTest {
         val result = classifier.classifyInternal(
             heartRateBpm = 105,
             stepsPerMinute = 20,
-            stressIndex = 40,
+            rmssd = 35.0,
             accelMagnitudeMs2 = 10f,
-            gyroMagnitudeRads = 2.0f,
+            gyroMagnitudeRads = 3.0f,
         )
         assertEquals(ActivityMode.EXERCISE, result.mode)
     }
 
     @Test
-    fun `exercise - takes priority over STRESS even with high stress index`() {
-        // HR=130, steps=150 → EXERCISE must win over stressIndex=80
+    fun `exercise - takes priority over STRESS even with low RMSSD`() {
+        // HR=130, steps=150, RMSSD=10ms (stress signal) → EXERCISE still wins
         val result = classifier.classifyInternal(
             heartRateBpm = 130,
             stepsPerMinute = 150,
-            stressIndex = 80,
+            rmssd = 10.0,
             accelMagnitudeMs2 = 20f,
             gyroMagnitudeRads = 2.5f,
         )
@@ -67,14 +67,14 @@ class ActivityClassifierTest {
     }
 
     @Test
-    fun `exercise - HR exactly 100 BPM is NOT exercise (boundary condition)`() {
-        // Threshold is strictly > 100
+    fun `exercise - HR exactly 100 BPM with no movement returns RELAX`() {
+        // Threshold is strictly > 100; with no movement signals above threshold, falls to RELAX
         val result = classifier.classifyInternal(
             heartRateBpm = 100,
-            stepsPerMinute = 150,
-            stressIndex = 40,
-            accelMagnitudeMs2 = 20f,
-            gyroMagnitudeRads = 2.0f,
+            stepsPerMinute = 10,
+            rmssd = 35.0,
+            accelMagnitudeMs2 = 5f,
+            gyroMagnitudeRads = 0.5f,
         )
         assertEquals(ActivityMode.RELAX, result.mode)
     }
@@ -84,7 +84,7 @@ class ActivityClassifierTest {
         val result = classifier.classifyInternal(
             heartRateBpm = 101,
             stepsPerMinute = 100,
-            stressIndex = 40,
+            rmssd = 35.0,
             accelMagnitudeMs2 = 8f,
             gyroMagnitudeRads = 0.3f,
         )
@@ -97,7 +97,7 @@ class ActivityClassifierTest {
         val result = classifier.classifyInternal(
             heartRateBpm = 110,
             stepsPerMinute = 0,
-            stressIndex = 40,
+            rmssd = 35.0,
             accelMagnitudeMs2 = 5f,
             gyroMagnitudeRads = 0.2f,
         )
@@ -108,11 +108,11 @@ class ActivityClassifierTest {
     // --- STRESS ---
 
     @Test
-    fun `stress - mid HR, low steps, high stress index returns STRESS`() {
+    fun `stress - mid HR, low steps, low RMSSD returns STRESS`() {
         val result = classifier.classifyInternal(
             heartRateBpm = 80,
             stepsPerMinute = 10,
-            stressIndex = 75,
+            rmssd = 12.0,
             accelMagnitudeMs2 = 2f,
             gyroMagnitudeRads = 0.1f,
         )
@@ -120,11 +120,11 @@ class ActivityClassifierTest {
     }
 
     @Test
-    fun `stress - exact boundary stressIndex 60 returns STRESS`() {
+    fun `stress - RMSSD just below 20ms boundary returns STRESS`() {
         val result = classifier.classifyInternal(
             heartRateBpm = 70,
             stepsPerMinute = 5,
-            stressIndex = 60,
+            rmssd = 19.9,
             accelMagnitudeMs2 = 1f,
             gyroMagnitudeRads = 0.1f,
         )
@@ -132,11 +132,11 @@ class ActivityClassifierTest {
     }
 
     @Test
-    fun `stress - stressIndex 59 falls below threshold returns RELAX`() {
+    fun `stress - RMSSD at 20ms boundary falls to RELAX (not strict less than)`() {
         val result = classifier.classifyInternal(
             heartRateBpm = 70,
             stepsPerMinute = 5,
-            stressIndex = 59,
+            rmssd = 20.0,
             accelMagnitudeMs2 = 1f,
             gyroMagnitudeRads = 0.1f,
         )
@@ -144,12 +144,25 @@ class ActivityClassifierTest {
     }
 
     @Test
-    fun `stress - HR 110 is outside 60-100 range so falls to RELAX despite high stress index`() {
+    fun `stress - HR 110 is outside 60-100 range so falls to RELAX despite low RMSSD`() {
         val result = classifier.classifyInternal(
             heartRateBpm = 110,
             stepsPerMinute = 5,
-            stressIndex = 80,
+            rmssd = 8.0,
             accelMagnitudeMs2 = 2f,
+            gyroMagnitudeRads = 0.1f,
+        )
+        assertEquals(ActivityMode.RELAX, result.mode)
+    }
+
+    @Test
+    fun `stress - RMSSD 0_0 during warmup does NOT trigger STRESS`() {
+        // StressCalculator emits rmssd=0.0 until RR window has >=2 samples
+        val result = classifier.classifyInternal(
+            heartRateBpm = 75,
+            stepsPerMinute = 5,
+            rmssd = 0.0,
+            accelMagnitudeMs2 = 1f,
             gyroMagnitudeRads = 0.1f,
         )
         assertEquals(ActivityMode.RELAX, result.mode)
@@ -158,11 +171,11 @@ class ActivityClassifierTest {
     // --- RELAX ---
 
     @Test
-    fun `relax - low HR, low steps, low stress index returns RELAX`() {
+    fun `relax - low HR, low steps, high RMSSD returns RELAX`() {
         val result = classifier.classifyInternal(
             heartRateBpm = 60,
             stepsPerMinute = 5,
-            stressIndex = 10,
+            rmssd = 55.0,
             accelMagnitudeMs2 = 1f,
             gyroMagnitudeRads = 0.05f,
         )
@@ -174,7 +187,7 @@ class ActivityClassifierTest {
         val result = classifier.classifyInternal(
             heartRateBpm = null,
             stepsPerMinute = 0,
-            stressIndex = 90,
+            rmssd = 5.0,
             accelMagnitudeMs2 = 20f,
             gyroMagnitudeRads = 3f,
         )
@@ -182,16 +195,45 @@ class ActivityClassifierTest {
     }
 
     @Test
-    fun `relax - sedentary HR with moderate stress but low stress index returns RELAX`() {
-        // HR in range, steps low, but stressIndex < 60 → not enough for STRESS
+    fun `relax - sedentary HR with moderate RMSSD above threshold returns RELAX`() {
+        // HR in range, steps low, but RMSSD >= 20ms → not enough for STRESS
         val result = classifier.classifyInternal(
             heartRateBpm = 80,
             stepsPerMinute = 10,
-            stressIndex = 30,
+            rmssd = 30.0,
             accelMagnitudeMs2 = 1f,
             gyroMagnitudeRads = 0.1f,
         )
         assertEquals(ActivityMode.RELAX, result.mode)
+    }
+
+    @Test
+    fun `relax - low RMSSD but stable HR (low SDHR) returns RELAX not STRESS`() {
+        // Duduk santai: RMSSD=10ms (rendah) tapi HR stabil SDHR=1.5 BPM
+        // Tanpa fix ini → STRESS; dengan fix → RELAX
+        val result = classifier.classifyInternal(
+            heartRateBpm = 75,
+            stepsPerMinute = 5,
+            rmssd = 10.0,
+            sdhr = 1.5,   // HR sangat stabil = santai
+            accelMagnitudeMs2 = 1f,
+            gyroMagnitudeRads = 0.1f,
+        )
+        assertEquals(ActivityMode.RELAX, result.mode)
+    }
+
+    @Test
+    fun `stress - low RMSSD AND unstable HR (high SDHR) returns STRESS`() {
+        // Stress nyata: RMSSD=10ms rendah DAN HR tidak stabil SDHR=5 BPM
+        val result = classifier.classifyInternal(
+            heartRateBpm = 75,
+            stepsPerMinute = 5,
+            rmssd = 10.0,
+            sdhr = 5.0,   // HR tidak stabil = stress
+            accelMagnitudeMs2 = 1f,
+            gyroMagnitudeRads = 0.1f,
+        )
+        assertEquals(ActivityMode.STRESS, result.mode)
     }
 
     // --- Confidence & Reason ---
@@ -199,13 +241,13 @@ class ActivityClassifierTest {
     @Test
     fun `confidence - always within valid range 0 to 1 for all modes`() {
         val cases = listOf(
-            classifier.classifyInternal(120, 120, 40, 20f, 2f) to "EXERCISE high signals",
-            classifier.classifyInternal(101, 100, 40, 14.73f, 1.01f) to "EXERCISE boundary",
-            classifier.classifyInternal(80, 10, 75, 2f, 0.1f) to "STRESS typical",
-            classifier.classifyInternal(70, 5, 60, 1f, 0.1f) to "STRESS boundary",
-            classifier.classifyInternal(60, 5, 10, 1f, 0.05f) to "RELAX low stress",
-            classifier.classifyInternal(null, 0, 90, 20f, 3f) to "RELAX null HR",
-            classifier.classifyInternal(100, 150, 40, 20f, 2f) to "RELAX HR boundary",
+            classifier.classifyInternal(120, 120, 35.0, 99.0, 20f, 2f) to "EXERCISE high signals",
+            classifier.classifyInternal(101, 100, 35.0, 99.0, 25f, 2.5f) to "EXERCISE boundary",
+            classifier.classifyInternal(80, 10, 12.0, 99.0, 2f, 0.1f) to "STRESS typical",
+            classifier.classifyInternal(70, 5, 19.9, 99.0, 1f, 0.1f) to "STRESS boundary",
+            classifier.classifyInternal(60, 5, 55.0, 99.0, 1f, 0.05f) to "RELAX high RMSSD",
+            classifier.classifyInternal(null, 0, 5.0, 99.0, 20f, 3f) to "RELAX null HR",
+            classifier.classifyInternal(100, 150, 35.0, 99.0, 20f, 2f) to "RELAX HR boundary",
         )
         cases.forEach { (result, label) ->
             assertTrue(
@@ -217,9 +259,9 @@ class ActivityClassifierTest {
 
     @Test
     fun `reason - contains the mode name as prefix`() {
-        val exercise = classifier.classifyInternal(120, 120, 40, 20f, 2f)
-        val stress = classifier.classifyInternal(80, 10, 75, 2f, 0.1f)
-        val relax = classifier.classifyInternal(60, 5, 10, 1f, 0.05f)
+        val exercise = classifier.classifyInternal(120, 120, 35.0, 99.0, 20f, 2f)
+        val stress = classifier.classifyInternal(80, 10, 12.0, 99.0, 2f, 0.1f)
+        val relax = classifier.classifyInternal(60, 5, 55.0, 99.0, 1f, 0.05f)
 
         assertTrue("Expected EXERCISE in reason", exercise.reason.startsWith("EXERCISE"))
         assertTrue("Expected STRESS in reason", stress.reason.startsWith("STRESS"))

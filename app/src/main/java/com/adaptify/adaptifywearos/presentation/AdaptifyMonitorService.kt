@@ -141,6 +141,7 @@ class AdaptifyMonitorService : Service() {
                             activityMode = activityReading.mode.name,
                             activityConfidence = activityReading.confidence,
                             rmssd = stressReading.rmssd,
+                            sdhr = stressReading.sdhr,
                             monitoring = true,
                         )
                         realtimeSender.send(payload)

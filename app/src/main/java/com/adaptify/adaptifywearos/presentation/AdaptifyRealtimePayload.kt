@@ -7,6 +7,7 @@ data class AdaptifyRealtimePayload(
     val activityMode: String,       // ActivityMode.name — "EXERCISE" | "STRESS" | "RELAX"
     val activityConfidence: Float,  // 0.0–1.0
     val rmssd: Double = 0.0,
+    val sdhr: Double = 99.0,
     val batteryLevel: Int = -1,
     val monitoring: Boolean = true,
 ) {
@@ -18,6 +19,7 @@ data class AdaptifyRealtimePayload(
         append("\"activityMode\": \"$activityMode\", ")
         append("\"activityConfidence\": $activityConfidence, ")
         append("\"rmssd\": $rmssd, ")
+        append("\"sdhr\": $sdhr, ")
         append("\"batteryLevel\": $batteryLevel, ")
         append("\"monitoring\": $monitoring")
         append("}")

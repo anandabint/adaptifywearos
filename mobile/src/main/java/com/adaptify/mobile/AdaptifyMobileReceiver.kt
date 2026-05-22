@@ -51,7 +51,11 @@ class AdaptifyMobileReceiver : WearableListenerService() {
                 return
             }
 
-            val mode = ActivityClassifier.classify(heartRate, stressIndex)
+            // Use watch-side classification (has full sensor context: RMSSD + SDHR + steps + accel)
+            // Phone-side reclassification would lose SDHR and other signals.
+            val mode = activityMode.ifEmpty {
+                ActivityClassifier.classify(heartRate, rmssd)  // fallback if watch sends empty
+            }
             val genre = ActivityClassifier.getMusicGenre(mode)
 
             val snapshot = AdaptifyRealtimeSnapshot(

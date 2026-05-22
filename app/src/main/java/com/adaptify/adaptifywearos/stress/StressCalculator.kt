@@ -9,6 +9,7 @@ data class StressReading(
     val baselineHeartRate: Int? = null,
     val baselineReady: Boolean = false,
     val rmssd: Double = 0.0,
+    val sdhr: Double = 99.0,
 )
 
 class StressCalculator(
@@ -24,6 +25,11 @@ class StressCalculator(
     private val rrIntervalsMs = ArrayDeque<Double>()
     private val rrWindowSize = 10
 
+    // HR sliding window for SDHR — Castaneda et al., 2018, Sensors MDPI
+    // SDHR = std deviation of recent HR samples; low SDHR = stable/relaxed
+    private val hrWindowSize = 20
+    private val hrSamplesForSd = ArrayDeque<Int>()
+
     fun calculate(
         currentHeartRate: Int?,
         heartRateTimestamp: Long?,
@@ -37,6 +43,7 @@ class StressCalculator(
             updateBaseline(currentHeartRate)
             updateRrWindow(currentHeartRate)
             lastProcessedHeartRateTimestamp = heartRateTimestamp
+            updateHrWindow(currentHeartRate)
         }
 
         val baseline = baselineHeartRate
@@ -56,6 +63,7 @@ class StressCalculator(
             baselineHeartRate = baseline?.roundToInt(),
             baselineReady = warmupSamples.size >= warmupSampleTarget,
             rmssd = computeRmssd(),
+            sdhr = computeSdhr(),
         )
     }
 
@@ -94,6 +102,20 @@ class StressCalculator(
         }
         if (count == 0) return 0.0
         return sqrt(sumSq / count)
+    }
+
+    private fun updateHrWindow(hr: Int) {
+        if (hrSamplesForSd.size >= hrWindowSize) hrSamplesForSd.removeFirst()
+        hrSamplesForSd.addLast(hr)
+    }
+
+    // SDHR — Castaneda et al., 2018: SD of HR over recent window
+    // Low SDHR (<3 BPM) during sedentary = stable autonomic state = relaxed
+    fun computeSdhr(): Double {
+        if (hrSamplesForSd.size < 4) return 99.0 // not enough data → assume unknown
+        val mean = hrSamplesForSd.average()
+        val variance = hrSamplesForSd.sumOf { (it - mean) * (it - mean) } / hrSamplesForSd.size
+        return kotlin.math.sqrt(variance)
     }
 
     private fun Int.toStressLabel(): String = when {

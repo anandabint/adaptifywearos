@@ -41,6 +41,35 @@ object MusicRepository {
         saveTracks(context, emptyList())
     }
 
+    /**
+     * Migrate tracks from old 6-genre system to new 3-genre system.
+     * Safe to call multiple times (idempotent).
+     * Old genre → New genre mapping:
+     *   EDM / Upbeat, Pop / Energetic  → Exercise Music  (EXERCISE)
+     *   Lo-fi / Calming, Ambient / Soft → Stress Relief  (STRESS)
+     *   Jazz / Acoustic, Classical / Sleep → Relax Music (RELAX)
+     */
+    fun migrateGenres(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        if (prefs.getBoolean("genre_migrated_v2", false)) return  // already done
+
+        val oldToNew = mapOf(
+            "EDM / Upbeat"       to ActivityClassifier.GENRE_EXERCISE,
+            "Pop / Energetic"    to ActivityClassifier.GENRE_EXERCISE,
+            "Lo-fi / Calming"    to ActivityClassifier.GENRE_STRESS,
+            "Ambient / Soft"     to ActivityClassifier.GENRE_STRESS,
+            "Jazz / Acoustic"    to ActivityClassifier.GENRE_RELAX,
+            "Classical / Sleep"  to ActivityClassifier.GENRE_RELAX,
+        )
+
+        val migrated = getAllTracks(context).map { track ->
+            val newGenre = oldToNew[track.genre]
+            if (newGenre != null) track.copy(genre = newGenre) else track
+        }
+        saveTracks(context, migrated)
+        prefs.edit().putBoolean("genre_migrated_v2", true).apply()
+    }
+
     private fun saveTracks(context: Context, tracks: List<MusicTrack>) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val json = gson.toJson(tracks)

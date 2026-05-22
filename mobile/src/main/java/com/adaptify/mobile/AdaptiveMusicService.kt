@@ -36,6 +36,11 @@ class AdaptiveMusicService : Service() {
 
     var onTrackChanged: ((MusicTrack?) -> Unit)? = null
 
+    // Hysteresis — mode must be stable for 30s before music switches
+    private var pendingGenre: String = ""
+    private var pendingSwitchRunnable: Runnable? = null
+    private val HYSTERESIS_DELAY_MS = 30_000L
+
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
@@ -66,7 +71,37 @@ class AdaptiveMusicService : Service() {
 
     fun playForGenre(genre: String) {
         if (genre.isEmpty()) return
-        if (genre == currentGenre && isPlaying) return
+
+        // Same genre already playing — no action needed
+        if (genre == currentGenre && isPlaying) {
+            cancelPendingSwitch()
+            return
+        }
+
+        // No music yet (first play) — start immediately, no delay
+        if (currentGenre.isEmpty()) {
+            applyGenreSwitch(genre)
+            return
+        }
+
+        // Genre changed — schedule switch after hysteresis delay
+        if (genre != pendingGenre) {
+            cancelPendingSwitch()
+            pendingGenre = genre
+            val runnable = Runnable {
+                Log.d(TAG, "Hysteresis elapsed — switching genre: $currentGenre → $genre")
+                applyGenreSwitch(genre)
+                pendingGenre = ""
+                pendingSwitchRunnable = null
+            }
+            pendingSwitchRunnable = runnable
+            handler.postDelayed(runnable, HYSTERESIS_DELAY_MS)
+            Log.d(TAG, "Genre switch pending: $currentGenre → $genre (in 30s)")
+        }
+        // else: same pending genre already scheduled, do nothing
+    }
+
+    private fun applyGenreSwitch(genre: String) {
         currentGenre = genre
         val tracks = MusicRepository.getTracksForGenre(this, genre)
         if (tracks.isEmpty()) {
@@ -75,6 +110,12 @@ class AdaptiveMusicService : Service() {
         }
         val track = tracks.random()
         if (currentPlayer?.isPlaying == true) crossfadeTo(track) else startTrack(track)
+    }
+
+    private fun cancelPendingSwitch() {
+        pendingSwitchRunnable?.let { handler.removeCallbacks(it) }
+        pendingSwitchRunnable = null
+        pendingGenre = ""
     }
 
     fun togglePlayPause() {
@@ -179,8 +220,17 @@ class AdaptiveMusicService : Service() {
 
     fun skipToNext() = skipTrack()
 
+    // Direct play from MusicBrowserActivity — bypasses 30s hysteresis.
+    // User explicitly chose this track, so play immediately.
+    fun playTrackDirectly(track: MusicTrack) {
+        cancelPendingSwitch()
+        currentGenre = track.genre
+        if (currentPlayer?.isPlaying == true) crossfadeTo(track) else startTrack(track)
+    }
+
     fun stopPlayback() {
         handler.removeCallbacksAndMessages(null)
+        cancelPendingSwitch()
         try { fadingOutPlayer?.stop() } catch (_: Exception) {}
         fadingOutPlayer?.release()
         fadingOutPlayer = null

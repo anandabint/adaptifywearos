@@ -63,7 +63,7 @@ class MusicPickerActivity : AppCompatActivity() {
         }
         root.addView(pageTitle)
 
-        GENRE_MAPPING.forEach { (mode, genre) ->
+        GENRE_SECTIONS.forEach { (mode, genre) ->
             root.addView(buildGenreSection(mode, genre))
         }
 
@@ -189,13 +189,12 @@ class MusicPickerActivity : AppCompatActivity() {
         private const val MATCH_PARENT = ViewGroup.LayoutParams.MATCH_PARENT
         private const val WRAP_CONTENT = ViewGroup.LayoutParams.WRAP_CONTENT
 
-        val GENRE_MAPPING = listOf(
-            "Workout Mode" to "EDM / Upbeat",
-            "High Stress Mode" to "Lo-fi / Calming",
-            "Active Mode" to "Pop / Energetic",
-            "Elevated Stress Mode" to "Ambient / Soft",
-            "Relax Mode" to "Jazz / Acoustic",
-            "Rest Mode" to "Classical / Sleep"
+        // 3 sections — one per classifier mode
+        // Genre names must match ActivityClassifier.GENRE_*
+        val GENRE_SECTIONS = listOf(
+            "EXERCISE mode" to ActivityClassifier.GENRE_EXERCISE,
+            "STRESS mode"   to ActivityClassifier.GENRE_STRESS,
+            "RELAX mode"    to ActivityClassifier.GENRE_RELAX,
         )
     }
 }

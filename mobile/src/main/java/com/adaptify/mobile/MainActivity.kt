@@ -91,6 +91,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
+        MusicRepository.migrateGenres(this)
         setContentView(binding.root)
         requestRuntimePermissions()
         setupButtons()
@@ -150,6 +151,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupButtons() {
+        binding.btnBrowseMusic.setOnClickListener {
+            startActivity(Intent(this, MusicBrowserActivity::class.java))
+        }
         binding.btnManageMusic.setOnClickListener {
             startActivity(Intent(this, MusicPickerActivity::class.java))
         }
@@ -176,11 +180,21 @@ class MainActivity : AppCompatActivity() {
         hr: Int, steps: Int, stressIndex: Int, rmssd: Double, mode: String, genre: String
     ) {
         binding.tvHeartRate.text = "Heart Rate: $hr BPM"
-        binding.tvSteps.text = "Steps: $steps"
-        binding.tvStressIndex.text = "Stress Index: $stressIndex / 100"
-        binding.tvRmssd.text = "RMSSD: ${"%.1f".format(rmssd)} ms"
+        binding.tvSteps.text = "Steps (session): $steps"
+        binding.tvRmssd.text = "HRV (RMSSD): ${"%.1f".format(rmssd)} ms"
+        binding.tvHrvScore.text = "HRV Score: ${computeHrvScore(rmssd)} / 100"
         binding.tvActivityMode.text = "Mode: ${mode.ifEmpty { "--" }}"
         binding.tvGenre.text = "Genre: ${genre.ifEmpty { "--" }}"
+    }
+
+    // HRV Score normalisasi berdasarkan Shaffer & Ginsberg (2017):
+    // RMSSD <20ms = stress zone (score rendah)
+    // RMSSD 20-40ms = normal zone
+    // RMSSD >40ms = relaxed zone (score tinggi)
+    // Scale: 0ms = 0, 60ms = 100 (linear, capped)
+    private fun computeHrvScore(rmssd: Double): Int {
+        if (rmssd <= 0.0) return 0
+        return (rmssd / 60.0 * 100.0).toInt().coerceIn(0, 100)
     }
 
     private fun updateBatteryUI(batteryLevel: Int) {

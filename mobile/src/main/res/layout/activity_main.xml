@@ -73,18 +73,19 @@
                     android:textAppearance="?attr/textAppearanceBodyLarge" />
 
                 <TextView
-                    android:id="@+id/tvStressIndex"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Stress Index: --"
-                    android:textAppearance="?attr/textAppearanceBodyLarge" />
-
-                <TextView
                     android:id="@+id/tvRmssd"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="RMSSD: -- ms"
-                    android:textAppearance="?attr/textAppearanceBodyMedium" />
+                    android:text="HRV (RMSSD): -- ms"
+                    android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+                <TextView
+                    android:id="@+id/tvHrvScore"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="HRV Score: -- / 100"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:alpha="0.8" />
 
                 <TextView
                     android:id="@+id/tvActivityMode"
@@ -170,14 +171,33 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Manage Music Button -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnManageMusic"
+        <!-- Browse + Manage Music Buttons -->
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:text="Manage Music"
-            android:textColor="@android:color/white"
-            app:backgroundTint="#4CAF50" />
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnBrowseMusic"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:text="Browse Music"
+                android:textColor="@android:color/white"
+                app:backgroundTint="#1976D2" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnManageMusic"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:text="Manage Music"
+                android:textColor="@android:color/white"
+                app:backgroundTint="#4CAF50" />
+
+        </LinearLayout>
 
     </LinearLayout>
 </ScrollView>
