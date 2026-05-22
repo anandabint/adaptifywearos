@@ -11,7 +11,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.adaptify.mobile"
+        applicationId = "com.adaptify.adaptifywearos"
         minSdk = 26
         targetSdk = 36
         versionCode = 1

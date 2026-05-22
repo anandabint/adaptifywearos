@@ -7,11 +7,13 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.ServiceConnection
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.adaptify.mobile.databinding.ActivityMainBinding
 import java.text.SimpleDateFormat
@@ -21,7 +23,6 @@ import java.util.Locale
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private lateinit var repository: MusicRepository
     private var musicService: AdaptiveMusicService? = null
     private var isBound = false
     private var lastGenre = ""
@@ -63,7 +64,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        repository = MusicRepository(this)
         requestRuntimePermissions()
         setupButtons()
         startAndBindMusicService()
@@ -92,8 +92,18 @@ class MainActivity : AppCompatActivity() {
     private fun requestRuntimePermissions() {
         val permissions = mutableListOf<String>()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
-            permissions.add(Manifest.permission.READ_MEDIA_AUDIO)
+            if (ContextCompat.checkSelfPermission(
+                    this, Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+            }
+            if (ContextCompat.checkSelfPermission(
+                    this, Manifest.permission.READ_MEDIA_AUDIO
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                permissions.add(Manifest.permission.READ_MEDIA_AUDIO)
+            }
         }
         if (permissions.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, permissions.toTypedArray(), REQUEST_PERMISSIONS)
@@ -105,18 +115,21 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, MusicPickerActivity::class.java))
         }
         binding.btnPlayPause.setOnClickListener {
-            musicService?.let { svc ->
-                if (svc.isPlaying) svc.pausePlayback() else svc.resumePlayback()
-            }
+            musicService?.togglePlayPause()
+            updateTrackUI(musicService?.currentTrack)
         }
         binding.btnSkip.setOnClickListener {
-            musicService?.skipToNext()
+            musicService?.skipTrack()
         }
     }
 
     private fun startAndBindMusicService() {
         val intent = Intent(this, AdaptiveMusicService::class.java)
-        startService(intent)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
+        }
         bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
     }
 

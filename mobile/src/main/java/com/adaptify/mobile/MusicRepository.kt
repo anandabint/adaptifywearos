@@ -1,7 +1,6 @@
 package com.adaptify.mobile
 
 import android.content.Context
-import android.content.SharedPreferences
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
@@ -11,42 +10,40 @@ data class MusicTrack(
     val genre: String
 )
 
-class MusicRepository(context: Context) {
-
-    private val prefs: SharedPreferences =
-        context.getSharedPreferences("music_repo", Context.MODE_PRIVATE)
+object MusicRepository {
+    private const val PREFS_NAME = "music_prefs"
+    private const val KEY_TRACKS = "tracks"
     private val gson = Gson()
-    private val listType = object : TypeToken<List<MusicTrack>>() {}.type
 
-    private fun loadAll(): MutableList<MusicTrack> {
-        val json = prefs.getString(KEY_TRACKS, null) ?: return mutableListOf()
-        return gson.fromJson(json, listType) ?: mutableListOf()
-    }
-
-    private fun saveAll(tracks: List<MusicTrack>) {
-        prefs.edit().putString(KEY_TRACKS, gson.toJson(tracks)).apply()
-    }
-
-    fun addTrack(track: MusicTrack) {
-        val tracks = loadAll()
+    fun addTrack(context: Context, track: MusicTrack) {
+        val tracks = getAllTracks(context).toMutableList()
         tracks.add(track)
-        saveAll(tracks)
+        saveTracks(context, tracks)
     }
 
-    fun removeTrack(uri: String) {
-        saveAll(loadAll().filter { it.uri != uri })
+    fun removeTrack(context: Context, uri: String) {
+        val tracks = getAllTracks(context).filter { it.uri != uri }
+        saveTracks(context, tracks)
     }
 
-    fun getTracksForGenre(genre: String): List<MusicTrack> =
-        loadAll().filter { it.genre == genre }
-
-    fun getAllTracks(): List<MusicTrack> = loadAll()
-
-    fun clear() {
-        prefs.edit().remove(KEY_TRACKS).apply()
+    fun getTracksForGenre(context: Context, genre: String): List<MusicTrack> {
+        return getAllTracks(context).filter { it.genre == genre }
     }
 
-    companion object {
-        private const val KEY_TRACKS = "tracks"
+    fun getAllTracks(context: Context): List<MusicTrack> {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val json = prefs.getString(KEY_TRACKS, "[]") ?: "[]"
+        val type = object : TypeToken<List<MusicTrack>>() {}.type
+        return gson.fromJson(json, type) ?: emptyList()
+    }
+
+    fun clear(context: Context) {
+        saveTracks(context, emptyList())
+    }
+
+    private fun saveTracks(context: Context, tracks: List<MusicTrack>) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val json = gson.toJson(tracks)
+        prefs.edit().putString(KEY_TRACKS, json).apply()
     }
 }

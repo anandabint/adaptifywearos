@@ -1,9 +1,11 @@
 package com.adaptify.adaptifywearos.presentation
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -22,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -33,44 +36,29 @@ import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.LocalContentColor
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.ScreenScaffold
+import androidx.wear.compose.material3.SwitchButton
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.ui.tooling.preview.WearPreviewDevices
 import androidx.wear.compose.ui.tooling.preview.WearPreviewFontScales
 import com.adaptify.adaptifywearos.health.HeartRateManager
 import com.adaptify.adaptifywearos.health.HeartRateState
 import com.adaptify.adaptifywearos.presentation.theme.AdaptifyWearOsTheme
-import com.adaptify.adaptifywearos.sensor.SensorHandler
 import com.adaptify.adaptifywearos.sensor.SensorSnapshot
 import com.adaptify.adaptifywearos.sensor.Vector3Sample
-import com.adaptify.adaptifywearos.classifier.ActivityClassifier
-import com.adaptify.adaptifywearos.stress.StressCalculator
 import com.adaptify.adaptifywearos.stress.StressReading
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.math.abs
-import kotlin.math.sqrt
-import android.util.Log
-import com.google.android.gms.wearable.PutDataMapRequest
-import com.google.android.gms.wearable.Wearable
-import com.adaptify.adaptifywearos.database.AdaptifyDatabase
-import com.adaptify.adaptifywearos.database.SensorLog
 
 class MainActivity : ComponentActivity() {
 
     companion object {
         private const val MODERN_HEART_RATE_PERMISSION_API = 36
+        private const val PREFS_NAME = "adaptify_monitor_prefs"
+        private const val KEY_MONITORING_ENABLED = "monitoring_enabled"
     }
-
-    private val sensorHandler by lazy { SensorHandler(applicationContext) }
-    private val heartRateManager by lazy { HeartRateManager(applicationContext) }
-
-    private val realtimeSender by lazy { AdaptifyRealtimeSender(applicationContext) }
-    private val database by lazy { AdaptifyDatabase.getInstance(applicationContext) }
-    private val stressCalculator = StressCalculator()
-    private val activityClassifier = ActivityClassifier()
 
     private val permissionState = MutableStateFlow(PermissionState())
     private val dashboardState = MutableStateFlow(DashboardUiState())
@@ -80,8 +68,9 @@ class MainActivity : ComponentActivity() {
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             refreshPermissions()
-            restartHeartRateMonitoring()
-            restartMotionMonitoring()
+            if (loadMonitoringEnabled()) {
+                AdaptifyMonitorService.start(this)
+            }
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -97,134 +86,66 @@ class MainActivity : ComponentActivity() {
                 WearDashboard(
                     state = uiState,
                     onRequestPermissions = ::requestMissingPermissions,
+                    onMonitoringToggled = ::onMonitoringToggled,
                 )
             }
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-
-        refreshPermissions()
-        requestMissingPermissionsOnce()
-        restartMotionMonitoring()
-    }
-
     override fun onStart() {
         super.onStart()
-
         refreshPermissions()
         requestMissingPermissionsOnce()
-        restartHeartRateMonitoring()
-    }
-
-    override fun onPause() {
-        sensorHandler.stop()
-        super.onPause()
-    }
-
-    override fun onStop() {
-        lifecycleScope.launch {
-            heartRateManager.stop()
+        // Start the service automatically if user has it enabled and permissions are granted.
+        if (loadMonitoringEnabled() && permissionState.value.allRequestedSensorsGranted) {
+            AdaptifyMonitorService.start(this)
         }
-        super.onStop()
     }
 
     private fun observeDashboard() {
         lifecycleScope.launch {
             combine(
-                sensorHandler.sensorState,
-                heartRateManager.heartRateState,
+                AdaptifyMonitorRepository.sensorSnapshot,
+                AdaptifyMonitorRepository.heartRateState,
+                AdaptifyMonitorRepository.stressReading,
+                AdaptifyMonitorRepository.serviceRunning,
                 permissionState,
-            ) { sensorSnapshot, heartRateState, permissions ->
+            ) { sensorSnapshot, heartRateState, stressReading, serviceRunning, permissions ->
                 DashboardUiState(
                     sensorSnapshot = sensorSnapshot,
                     heartRateState = heartRateState,
-                    stressReading = stressCalculator.calculate(
-                        currentHeartRate = heartRateState.bpm,
-                        heartRateTimestamp = heartRateState.lastUpdatedEpochMillis,
-                        accelerometerDelta = sensorSnapshot.accelerometerDelta,
-                    ),
+                    stressReading = stressReading,
                     permissionState = permissions,
+                    monitoringEnabled = loadMonitoringEnabled(),
+                    serviceRunning = serviceRunning,
                 )
-            }.collect { state ->
-                dashboardState.value = state
-
-                val activityReading = activityClassifier.classify(
-                    sensorSnapshot = state.sensorSnapshot,
-                    heartRateState = state.heartRateState,
-                    stressReading = state.stressReading,
-                )
-                val payload = AdaptifyRealtimePayload(
-                    heartRate = state.heartRateState.bpm ?: 0,
-                    steps = state.sensorSnapshot.steps ?: 0,
-                    stressIndex = state.stressReading.index,
-                    activityMode = activityReading.mode.name,
-                    activityConfidence = activityReading.confidence,
-                )
-                realtimeSender.send(payload)
-
-                val accelMag = state.sensorSnapshot.accelerometer
-                    ?.let { sqrt(it.x * it.x + it.y * it.y + it.z * it.z) } ?: 0f
-                val gyroMag = state.sensorSnapshot.gyroscope
-                    ?.let { sqrt(it.x * it.x + it.y * it.y + it.z * it.z) } ?: 0f
-                lifecycleScope.launch(Dispatchers.IO) {
-                    database.sensorLogDao().insert(
-                        SensorLog(
-                            timestamp = System.currentTimeMillis(),
-                            heartRate = state.heartRateState.bpm ?: 0,
-                            steps = state.sensorSnapshot.steps ?: 0,
-                            stressIndex = state.stressReading.index,
-                            rmssd = null,
-                            accelerometerMagnitude = accelMag,
-                            gyroscopeMagnitude = gyroMag,
-                            activityMode = activityReading.mode.name,
-                            activityConfidence = activityReading.confidence,
-                        )
-                    )
-                }
-
-            }
+            }.collect { dashboardState.value = it }
         }
     }
 
-    private fun sendHeartRateToPhone(bpm: Int) {
-        val request = PutDataMapRequest.create("/adaptify_heart_rate").apply {
-            dataMap.putInt("heart_rate", bpm)
-            dataMap.putLong("timestamp", System.currentTimeMillis())
-        }.asPutDataRequest().setUrgent()
-
-        Wearable.getDataClient(this)
-            .putDataItem(request)
-            .addOnSuccessListener {
-                Log.d("AdaptifyWearSender", "SUCCESS SEND BPM: $bpm")
-            }
-            .addOnFailureListener {
-                Log.e("AdaptifyWearSender", "FAILED SEND", it)
-            }
-    }
-
-    private fun restartMotionMonitoring() {
-        val currentPermissions = permissionState.value
-
-        sensorHandler.stop()
-        sensorHandler.start(
-            scope = lifecycleScope,
-            canReadSteps = currentPermissions.activityRecognitionGranted,
-        )
-    }
-
-    private fun restartHeartRateMonitoring() {
-        val currentPermissions = permissionState.value
-
-        lifecycleScope.launch {
-            if (currentPermissions.heartRateGranted) {
-                heartRateManager.start()
+    private fun onMonitoringToggled(enabled: Boolean) {
+        saveMonitoringEnabled(enabled)
+        if (enabled) {
+            if (permissionState.value.allRequestedSensorsGranted) {
+                AdaptifyMonitorService.start(this)
             } else {
-                heartRateManager.stop()
+                requestMissingPermissions()
             }
+        } else {
+            AdaptifyMonitorService.stop(this)
         }
+        // Reflect the new pref in the UI immediately.
+        dashboardState.update { it.copy(monitoringEnabled = enabled) }
     }
+
+    private fun loadMonitoringEnabled(): Boolean =
+        prefs().getBoolean(KEY_MONITORING_ENABLED, true)
+
+    private fun saveMonitoringEnabled(enabled: Boolean) {
+        prefs().edit().putBoolean(KEY_MONITORING_ENABLED, enabled).apply()
+    }
+
+    private fun prefs() = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     private fun refreshPermissions() {
         permissionState.update {
@@ -237,15 +158,12 @@ class MainActivity : ComponentActivity() {
 
     private fun requestMissingPermissionsOnce() {
         if (permissionState.value.allRequestedSensorsGranted || permissionsRequestedOnce) return
-
         permissionsRequestedOnce = true
         requestMissingPermissions()
     }
 
     private fun requestMissingPermissions() {
-        val missingPermissions = buildRequiredPermissions()
-            .filterNot(::hasPermission)
-
+        val missingPermissions = buildRequiredPermissions().filterNot(::hasPermission)
         if (missingPermissions.isEmpty()) return
         permissionLauncher.launch(missingPermissions.toTypedArray())
     }
@@ -288,12 +206,15 @@ data class DashboardUiState(
     val heartRateState: HeartRateState = HeartRateState(),
     val stressReading: StressReading = StressReading(),
     val permissionState: PermissionState = PermissionState(),
+    val monitoringEnabled: Boolean = true,
+    val serviceRunning: Boolean = false,
 )
 
 @Composable
 private fun WearDashboard(
     state: DashboardUiState,
     onRequestPermissions: () -> Unit,
+    onMonitoringToggled: (Boolean) -> Unit,
 ) {
     AppScaffold {
         val listState = rememberTransformingLazyColumnState()
@@ -302,9 +223,9 @@ private fun WearDashboard(
                 contentPadding = contentPadding,
                 state = listState,
             ) {
-                item {
-                    HeaderCard(state = state)
-                }
+                item { MonitoringToggleCard(state = state, onToggled = onMonitoringToggled) }
+
+                item { HeaderCard(state = state) }
 
                 if (!state.permissionState.allRequestedSensorsGranted) {
                     item {
@@ -315,63 +236,111 @@ private fun WearDashboard(
                     }
                 }
 
-                item {
-                    ValueCard(
-                        title = "Heart Rate",
-                        value = state.heartRateState.bpm?.let { "$it bpm" } ?: "-- bpm",
-                        subtitle = heartRateSubtitle(state),
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
+                if (state.monitoringEnabled) {
+                    item {
+                        ValueCard(
+                            title = "Heart Rate",
+                            value = state.heartRateState.bpm?.let { "$it bpm" } ?: "-- bpm",
+                            subtitle = heartRateSubtitle(state),
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    }
+
+                    item {
+                        ValueCard(
+                            title = "Steps",
+                            value = state.sensorSnapshot.steps?.toString() ?: "--",
+                            subtitle = stepSubtitle(state.sensorSnapshot),
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    }
+
+                    item {
+                        VectorCard(
+                            title = "Accelerometer",
+                            sample = state.sensorSnapshot.accelerometer,
+                            subtitle = "delta ${state.sensorSnapshot.accelerometerDelta.format(2)}",
+                            unavailableLabel = "Accelerometer not available",
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                        )
+                    }
+
+                    item {
+                        VectorCard(
+                            title = "Gyroscope",
+                            sample = state.sensorSnapshot.gyroscope,
+                            subtitle = if (state.sensorSnapshot.gyroscopeAvailable) {
+                                "Live angular velocity"
+                            } else {
+                                "Gyroscope not available"
+                            },
+                            unavailableLabel = "Gyroscope not available",
+                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                            contentColor = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+
+                    item {
+                        StressCard(
+                            stressReading = state.stressReading,
+                            currentHeartRate = state.heartRateState.bpm,
+                        )
+                    }
+                } else {
+                    item { MonitoringPausedCard() }
                 }
 
-                item {
-                    ValueCard(
-                        title = "Steps",
-                        value = state.sensorSnapshot.steps?.toString() ?: "--",
-                        subtitle = stepSubtitle(state.sensorSnapshot),
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    )
-                }
-
-                item {
-                    VectorCard(
-                        title = "Accelerometer",
-                        sample = state.sensorSnapshot.accelerometer,
-                        subtitle = "delta ${state.sensorSnapshot.accelerometerDelta.format(2)}",
-                        unavailableLabel = "Accelerometer not available",
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                    )
-                }
-
-                item {
-                    VectorCard(
-                        title = "Gyroscope",
-                        sample = state.sensorSnapshot.gyroscope,
-                        subtitle = if (state.sensorSnapshot.gyroscopeAvailable) {
-                            "Live angular velocity"
-                        } else {
-                            "Gyroscope not available"
-                        },
-                        unavailableLabel = "Gyroscope not available",
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                        contentColor = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-
-                item {
-                    StressCard(
-                        stressReading = state.stressReading,
-                        currentHeartRate = state.heartRateState.bpm,
-                    )
-                }
-
-                item {
-                    FooterCard()
-                }
+                item { FooterCard() }
             }
+        }
+    }
+}
+
+@Composable
+private fun MonitoringToggleCard(
+    state: DashboardUiState,
+    onToggled: (Boolean) -> Unit,
+) {
+    val secondary = if (state.monitoringEnabled) {
+        if (state.serviceRunning) "Service running" else "Starting…"
+    } else {
+        "Tap to resume"
+    }
+    SwitchButton(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        checked = state.monitoringEnabled,
+        onCheckedChange = onToggled,
+        label = {
+            Text(
+                text = if (state.monitoringEnabled) "Monitoring Active" else "Monitoring Paused",
+                fontWeight = FontWeight.SemiBold,
+            )
+        },
+        secondaryLabel = { Text(text = secondary) },
+    )
+}
+
+@Composable
+private fun MonitoringPausedCard() {
+    SurfaceCard(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                text = "Sensors paused",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = "No data is being collected. Toggle the switch above to resume background monitoring.",
+                style = MaterialTheme.typography.bodySmall,
+            )
         }
     }
 }
@@ -392,7 +361,7 @@ private fun HeaderCard(state: DashboardUiState) {
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = "Wear OS dashboard with Health Services heart rate and 1s motion refresh.",
+                text = "Background service keeps heart rate + motion tracking active while the screen is off.",
                 style = MaterialTheme.typography.bodySmall,
             )
             Text(
@@ -572,7 +541,7 @@ private fun FooterCard() {
         contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
         Text(
-            text = "Heart rate stays active while the app is open, while motion sensors pause when the UI sleeps to save battery.",
+            text = "Tracking continues in a foreground service with a partial wake lock — screen off is OK.",
             style = MaterialTheme.typography.bodySmall,
             textAlign = TextAlign.Center,
         )
@@ -670,8 +639,11 @@ private fun DefaultPreview() {
                     activityRecognitionGranted = true,
                     heartRateGranted = true,
                 ),
+                monitoringEnabled = true,
+                serviceRunning = true,
             ),
             onRequestPermissions = {},
+            onMonitoringToggled = {},
         )
     }
 }

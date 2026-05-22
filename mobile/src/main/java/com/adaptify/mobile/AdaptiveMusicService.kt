@@ -27,7 +27,6 @@ class AdaptiveMusicService : Service() {
     private val binder = MusicBinder()
     private var currentPlayer: MediaPlayer? = null
     private var fadingOutPlayer: MediaPlayer? = null
-    private lateinit var repository: MusicRepository
     private lateinit var mediaSession: MediaSession
     private val handler = Handler(Looper.getMainLooper())
 
@@ -39,7 +38,6 @@ class AdaptiveMusicService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        repository = MusicRepository(this)
         createNotificationChannel()
         setupMediaSession()
     }
@@ -48,8 +46,8 @@ class AdaptiveMusicService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_TOGGLE_PLAY -> if (isPlaying) pausePlayback() else resumePlayback()
-            ACTION_SKIP -> skipToNext()
+            ACTION_TOGGLE_PLAY -> togglePlayPause()
+            ACTION_SKIP -> skipTrack()
         }
         startForeground(NOTIFICATION_ID, buildNotification())
         return START_STICKY
@@ -60,7 +58,7 @@ class AdaptiveMusicService : Service() {
         mediaSession.setCallback(object : MediaSession.Callback() {
             override fun onPlay() { resumePlayback() }
             override fun onPause() { pausePlayback() }
-            override fun onSkipToNext() { skipToNext() }
+            override fun onSkipToNext() { skipTrack() }
             override fun onStop() { stopPlayback() }
         })
         mediaSession.isActive = true
@@ -70,13 +68,17 @@ class AdaptiveMusicService : Service() {
         if (genre.isEmpty()) return
         if (genre == currentGenre && isPlaying) return
         currentGenre = genre
-        val tracks = repository.getTracksForGenre(genre)
+        val tracks = MusicRepository.getTracksForGenre(this, genre)
         if (tracks.isEmpty()) {
             Log.d(TAG, "No tracks for genre: $genre")
             return
         }
         val track = tracks.random()
         if (currentPlayer?.isPlaying == true) crossfadeTo(track) else startTrack(track)
+    }
+
+    fun togglePlayPause() {
+        if (isPlaying) pausePlayback() else resumePlayback()
     }
 
     private fun startTrack(track: MusicTrack) {
@@ -114,6 +116,7 @@ class AdaptiveMusicService : Service() {
                 if (step < CROSSFADE_STEPS) {
                     handler.postDelayed(this, CROSSFADE_STEP_MS)
                 } else {
+                    try { oldPlayer?.stop() } catch (_: Exception) {}
                     oldPlayer?.release()
                     if (fadingOutPlayer === oldPlayer) fadingOutPlayer = null
                 }
@@ -141,7 +144,7 @@ class AdaptiveMusicService : Service() {
     }
 
     private fun onTrackComplete() {
-        val tracks = repository.getTracksForGenre(currentGenre)
+        val tracks = MusicRepository.getTracksForGenre(this, currentGenre)
         if (tracks.isNotEmpty()) {
             startTrack(tracks.random())
         } else {
@@ -153,27 +156,32 @@ class AdaptiveMusicService : Service() {
     }
 
     fun pausePlayback() {
-        currentPlayer?.pause()
+        try { currentPlayer?.pause() } catch (_: Exception) {}
         isPlaying = false
+        onTrackChanged?.invoke(currentTrack)
         updateNotification()
     }
 
     fun resumePlayback() {
         if (currentTrack == null) return
-        currentPlayer?.start()
+        try { currentPlayer?.start() } catch (_: Exception) {}
         isPlaying = true
+        onTrackChanged?.invoke(currentTrack)
         updateNotification()
     }
 
-    fun skipToNext() {
-        val tracks = repository.getTracksForGenre(currentGenre)
+    fun skipTrack() {
+        val tracks = MusicRepository.getTracksForGenre(this, currentGenre)
         if (tracks.isEmpty()) return
         val next = tracks.filter { it.uri != currentTrack?.uri }.randomOrNull() ?: tracks.random()
         if (currentPlayer?.isPlaying == true) crossfadeTo(next) else startTrack(next)
     }
 
+    fun skipToNext() = skipTrack()
+
     fun stopPlayback() {
         handler.removeCallbacksAndMessages(null)
+        try { fadingOutPlayer?.stop() } catch (_: Exception) {}
         fadingOutPlayer?.release()
         fadingOutPlayer = null
         releaseCurrentPlayer()
@@ -192,8 +200,8 @@ class AdaptiveMusicService : Service() {
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                CHANNEL_ID, "Music Playback", NotificationManager.IMPORTANCE_LOW
-            ).apply { description = "Adaptify adaptive music controls" }
+                CHANNEL_ID, "Adaptify Music", NotificationManager.IMPORTANCE_LOW
+            ).apply { description = "Adaptive music playback controls" }
             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
     }
@@ -220,7 +228,7 @@ class AdaptiveMusicService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Adaptify Music")
             .setContentText(trackText)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(android.R.drawable.ic_media_play)
             .setContentIntent(openIntent)
             .addAction(playPauseIcon, if (isPlaying) "Pause" else "Play", toggleIntent)
             .addAction(android.R.drawable.ic_media_next, "Skip", skipIntent)
@@ -246,11 +254,11 @@ class AdaptiveMusicService : Service() {
 
     companion object {
         private const val TAG = "AdaptiveMusic"
-        const val CHANNEL_ID = "adaptify_music"
-        const val NOTIFICATION_ID = 2001
+        const val CHANNEL_ID = "adaptify_music_channel"
+        const val NOTIFICATION_ID = 1
         const val ACTION_TOGGLE_PLAY = "com.adaptify.mobile.TOGGLE_PLAY"
         const val ACTION_SKIP = "com.adaptify.mobile.SKIP"
         private const val CROSSFADE_STEPS = 20
-        private const val CROSSFADE_STEP_MS = 100L // 20 steps × 100ms = 2s total
+        private const val CROSSFADE_STEP_MS = 100L
     }
 }
