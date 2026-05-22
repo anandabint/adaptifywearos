@@ -1,12 +1,14 @@
 package com.adaptify.adaptifywearos.stress
 
 import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 data class StressReading(
     val index: Int = 0,
     val level: String = "Calm",
     val baselineHeartRate: Int? = null,
     val baselineReady: Boolean = false,
+    val rmssd: Double = 0.0,
 )
 
 class StressCalculator(
@@ -16,6 +18,11 @@ class StressCalculator(
     private var baselineHeartRate: Float? = null
     private val warmupSamples = ArrayDeque<Int>()
     private var lastProcessedHeartRateTimestamp: Long? = null
+
+    // RMSSD sliding window — successive RR intervals derived from HR.
+    // RR_i = 60000 / HR_i (ms); RMSSD = sqrt(mean((RR_i - RR_{i-1})^2)).
+    private val rrIntervalsMs = ArrayDeque<Double>()
+    private val rrWindowSize = 10
 
     fun calculate(
         currentHeartRate: Int?,
@@ -28,6 +35,7 @@ class StressCalculator(
             heartRateTimestamp != lastProcessedHeartRateTimestamp
         ) {
             updateBaseline(currentHeartRate)
+            updateRrWindow(currentHeartRate)
             lastProcessedHeartRateTimestamp = heartRateTimestamp
         }
 
@@ -47,6 +55,7 @@ class StressCalculator(
             level = totalScore.toStressLabel(),
             baselineHeartRate = baseline?.roundToInt(),
             baselineReady = warmupSamples.size >= warmupSampleTarget,
+            rmssd = computeRmssd(),
         )
     }
 
@@ -61,6 +70,30 @@ class StressCalculator(
         if (currentHeartRate <= currentBaseline + 8f) {
             baselineHeartRate = (currentBaseline * 0.92f) + (currentHeartRate * 0.08f)
         }
+    }
+
+    private fun updateRrWindow(currentHeartRate: Int) {
+        if (currentHeartRate <= 0) return
+        val rr = 60_000.0 / currentHeartRate
+        if (rrIntervalsMs.size >= rrWindowSize) rrIntervalsMs.removeFirst()
+        rrIntervalsMs.addLast(rr)
+    }
+
+    private fun computeRmssd(): Double {
+        if (rrIntervalsMs.size < 2) return 0.0
+        var sumSq = 0.0
+        var count = 0
+        val iterator = rrIntervalsMs.iterator()
+        var prev = iterator.next()
+        while (iterator.hasNext()) {
+            val curr = iterator.next()
+            val d = curr - prev
+            sumSq += d * d
+            count++
+            prev = curr
+        }
+        if (count == 0) return 0.0
+        return sqrt(sumSq / count)
     }
 
     private fun Int.toStressLabel(): String = when {

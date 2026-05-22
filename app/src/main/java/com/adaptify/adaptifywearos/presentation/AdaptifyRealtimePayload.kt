@@ -6,6 +6,9 @@ data class AdaptifyRealtimePayload(
     val stressIndex: Int,
     val activityMode: String,       // ActivityMode.name — "EXERCISE" | "STRESS" | "RELAX"
     val activityConfidence: Float,  // 0.0–1.0
+    val rmssd: Double = 0.0,
+    val batteryLevel: Int = -1,
+    val monitoring: Boolean = true,
 ) {
     fun toJson(): String = buildString {
         append("{")
@@ -13,7 +16,10 @@ data class AdaptifyRealtimePayload(
         append("\"steps\": $steps, ")
         append("\"stress\": $stressIndex, ")
         append("\"activityMode\": \"$activityMode\", ")
-        append("\"activityConfidence\": $activityConfidence")
+        append("\"activityConfidence\": $activityConfidence, ")
+        append("\"rmssd\": $rmssd, ")
+        append("\"batteryLevel\": $batteryLevel, ")
+        append("\"monitoring\": $monitoring")
         append("}")
     }
 }

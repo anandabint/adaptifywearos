@@ -1,6 +1,7 @@
 package com.adaptify.adaptifywearos.presentation
 
 import android.content.Context
+import android.os.BatteryManager
 import android.util.Log
 import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.CoroutineScope
@@ -13,7 +14,8 @@ class AdaptifyRealtimeSender(
 ) {
 
     fun send(payload: AdaptifyRealtimePayload) {
-        sendPayload(payload.toJson())
+        val enriched = payload.copy(batteryLevel = getBatteryLevel(context))
+        sendPayload(enriched.toJson())
     }
 
     fun sendPayload(json: String) {
@@ -61,6 +63,16 @@ class AdaptifyRealtimeSender(
                     e
                 )
             }
+        }
+    }
+
+    private fun getBatteryLevel(context: Context): Int {
+        return try {
+            val bm = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+            bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+        } catch (t: Throwable) {
+            Log.w("AdaptifyWearSender", "battery read failed", t)
+            -1
         }
     }
 }

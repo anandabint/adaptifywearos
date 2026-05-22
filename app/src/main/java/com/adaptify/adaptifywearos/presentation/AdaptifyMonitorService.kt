@@ -140,6 +140,8 @@ class AdaptifyMonitorService : Service() {
                             stressIndex = stressReading.index,
                             activityMode = activityReading.mode.name,
                             activityConfidence = activityReading.confidence,
+                            rmssd = stressReading.rmssd,
+                            monitoring = true,
                         )
                         realtimeSender.send(payload)
 
@@ -180,6 +182,8 @@ class AdaptifyMonitorService : Service() {
         running = false
         AdaptifyMonitorRepository.markRunning(false)
 
+        sendDisconnectPayload()
+
         pipelineJob?.cancel()
         pipelineJob = null
 
@@ -208,6 +212,29 @@ class AdaptifyMonitorService : Service() {
         Log.d(TAG, "onDestroy")
         stopMonitoring()
         super.onDestroy()
+    }
+
+    private fun sendDisconnectPayload() {
+        try {
+            val lastSensor = AdaptifyMonitorRepository.sensorSnapshot.value
+            val lastHr = AdaptifyMonitorRepository.heartRateState.value
+            val lastStress = AdaptifyMonitorRepository.stressReading.value
+            val lastActivity = AdaptifyMonitorRepository.activityReading.value
+            realtimeSender.send(
+                AdaptifyRealtimePayload(
+                    heartRate = lastHr.bpm ?: 0,
+                    steps = lastSensor.steps ?: 0,
+                    stressIndex = lastStress.index,
+                    activityMode = lastActivity?.mode?.name ?: "RELAX",
+                    activityConfidence = lastActivity?.confidence ?: 0f,
+                    rmssd = lastStress.rmssd,
+                    monitoring = false,
+                )
+            )
+            Log.d(TAG, "Sent monitoring=false disconnect payload")
+        } catch (t: Throwable) {
+            Log.w(TAG, "Failed to send disconnect payload", t)
+        }
     }
 
     private fun acquireWakeLock() {

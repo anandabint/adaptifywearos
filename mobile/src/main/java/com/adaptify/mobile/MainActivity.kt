@@ -8,9 +8,12 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -19,6 +22,8 @@ import com.adaptify.mobile.databinding.ActivityMainBinding
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 
 class MainActivity : AppCompatActivity() {
 
@@ -26,6 +31,17 @@ class MainActivity : AppCompatActivity() {
     private var musicService: AdaptiveMusicService? = null
     private var isBound = false
     private var lastGenre = ""
+
+    private val lastDataTime = AtomicLong(0L)
+    private val watchMonitoring = AtomicBoolean(true)
+    private val watchBatteryLevel = AtomicLong(-1L)
+    private val statusHandler = Handler(Looper.getMainLooper())
+    private val statusTicker = object : Runnable {
+        override fun run() {
+            refreshConnectionStatus()
+            statusHandler.postDelayed(this, STATUS_TICK_MS)
+        }
+    }
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
@@ -52,8 +68,20 @@ class MainActivity : AppCompatActivity() {
             val rmssd = intent.getDoubleExtra(AdaptifyMobileReceiver.EXTRA_RMSSD, 0.0)
             val mode = intent.getStringExtra(AdaptifyMobileReceiver.EXTRA_ACTIVITY_MODE) ?: ""
             val genre = intent.getStringExtra(AdaptifyMobileReceiver.EXTRA_GENRE) ?: ""
+            val battery = intent.getIntExtra(AdaptifyMobileReceiver.EXTRA_BATTERY_LEVEL, -1)
+            val monitoring = intent.getBooleanExtra(AdaptifyMobileReceiver.EXTRA_MONITORING, true)
+
+            lastDataTime.set(System.currentTimeMillis())
+            watchMonitoring.set(monitoring)
+            watchBatteryLevel.set(battery.toLong())
+
             updateSensorUI(hr, steps, stressIndex, rmssd, mode, genre)
-            if (genre.isNotEmpty() && genre != lastGenre) {
+            updateBatteryUI(battery)
+            refreshConnectionStatus()
+
+            // Only auto-play when the watch is actively monitoring; pausing on the watch
+            // shouldn't trigger a music genre change on the phone.
+            if (monitoring && genre.isNotEmpty() && genre != lastGenre) {
                 lastGenre = genre
                 musicService?.playForGenre(genre)
             }
@@ -74,9 +102,20 @@ class MainActivity : AppCompatActivity() {
         LocalBroadcastManager.getInstance(this).registerReceiver(
             dataReceiver, IntentFilter(AdaptifyMobileReceiver.ACTION_DATA_UPDATED)
         )
+        // Re-hydrate from cached snapshot so the UI doesn't show "--" while waiting for first push.
+        AdaptifyRealtimeStore.load(this)?.let { snap ->
+            lastDataTime.set(snap.updatedAtEpochMillis)
+            watchMonitoring.set(snap.monitoring)
+            watchBatteryLevel.set(snap.batteryLevel.toLong())
+            updateSensorUI(snap.heartRate, snap.steps, snap.stressIndex, snap.rmssd, snap.mode, snap.genre)
+            updateBatteryUI(snap.batteryLevel)
+        }
+        refreshConnectionStatus()
+        statusHandler.post(statusTicker)
     }
 
     override fun onStop() {
+        statusHandler.removeCallbacks(statusTicker)
         LocalBroadcastManager.getInstance(this).unregisterReceiver(dataReceiver)
         super.onStop()
     }
@@ -142,8 +181,44 @@ class MainActivity : AppCompatActivity() {
         binding.tvRmssd.text = "RMSSD: ${"%.1f".format(rmssd)} ms"
         binding.tvActivityMode.text = "Mode: ${mode.ifEmpty { "--" }}"
         binding.tvGenre.text = "Genre: ${genre.ifEmpty { "--" }}"
-        val time = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-        binding.tvLastUpdated.text = "Updated: $time"
+    }
+
+    private fun updateBatteryUI(batteryLevel: Int) {
+        binding.tvBattery.text = if (batteryLevel in 0..100) {
+            "Watch Battery: $batteryLevel%"
+        } else {
+            "Watch Battery: --%"
+        }
+    }
+
+    private fun refreshConnectionStatus() {
+        val last = lastDataTime.get()
+        val now = System.currentTimeMillis()
+        val ageMs = now - last
+
+        val (statusText, statusColor) = when {
+            last == 0L -> "SEARCHING..." to COLOR_SEARCHING
+            ageMs > DATA_TIMEOUT_MS -> "SEARCHING..." to COLOR_SEARCHING
+            !watchMonitoring.get() -> "DISCONNECTED" to COLOR_DISCONNECTED
+            else -> "WATCH LINK ACTIVE" to COLOR_ACTIVE
+        }
+        binding.tvConnectionStatus.text = statusText
+        binding.tvConnectionStatus.setTextColor(statusColor)
+
+        binding.tvLastUpdated.text = if (last == 0L) {
+            "Waiting for watch data..."
+        } else {
+            "Last sync: ${formatRelativeAge(ageMs)} (${
+                SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date(last))
+            })"
+        }
+    }
+
+    private fun formatRelativeAge(ageMs: Long): String = when {
+        ageMs < 2_000 -> "just now"
+        ageMs < 60_000 -> "${ageMs / 1_000}s ago"
+        ageMs < 3_600_000 -> "${ageMs / 60_000}m ago"
+        else -> "${ageMs / 3_600_000}h ago"
     }
 
     private fun updateTrackUI(track: MusicTrack?) {
@@ -159,5 +234,10 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val REQUEST_PERMISSIONS = 100
+        private const val STATUS_TICK_MS = 1_000L
+        private const val DATA_TIMEOUT_MS = 10_000L
+        private val COLOR_ACTIVE = Color.parseColor("#4CAF50")
+        private val COLOR_SEARCHING = Color.parseColor("#FF9800")
+        private val COLOR_DISCONNECTED = Color.parseColor("#9E9E9E")
     }
 }

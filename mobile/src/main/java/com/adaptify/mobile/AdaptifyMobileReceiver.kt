@@ -34,13 +34,19 @@ class AdaptifyMobileReceiver : WearableListenerService() {
             val stressIndex = json.optInt("stress", 0)
             val activityMode = json.optString(EXTRA_ACTIVITY_MODE, "")
             val activityConfidence = json.optDouble("activityConfidence", 0.0).toFloat()
+            val rmssd = json.optDouble("rmssd", 0.0)
+            val batteryLevel = json.optInt("batteryLevel", -1)
+            val monitoring = json.optBoolean("monitoring", true)
 
             Log.d(
                 TAG,
-                "Parsed: hr=$heartRate steps=$steps stress=$stressIndex watchMode=$activityMode conf=$activityConfidence"
+                "Parsed: hr=$heartRate steps=$steps stress=$stressIndex watchMode=$activityMode " +
+                    "conf=$activityConfidence rmssd=$rmssd battery=$batteryLevel monitoring=$monitoring"
             )
 
-            if (heartRate <= 0) {
+            // Allow heartRate=0 only when the watch explicitly signalled monitoring=false
+            // (e.g. user just toggled the watch switch off — UI still needs the state update).
+            if (heartRate <= 0 && monitoring) {
                 Log.w(TAG, "Dropping payload — heartRate=$heartRate (watch sensor warming up or not worn)")
                 return
             }
@@ -54,7 +60,10 @@ class AdaptifyMobileReceiver : WearableListenerService() {
                 stressIndex = stressIndex,
                 mode = mode,
                 genre = genre,
-                updatedAtEpochMillis = System.currentTimeMillis()
+                updatedAtEpochMillis = System.currentTimeMillis(),
+                rmssd = rmssd,
+                batteryLevel = batteryLevel,
+                monitoring = monitoring,
             )
 
             AdaptifyRealtimeStore.save(this, snapshot)
@@ -62,7 +71,11 @@ class AdaptifyMobileReceiver : WearableListenerService() {
             val intent = AdaptifyRealtimeStore.toBroadcastIntent(packageName, snapshot)
             LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
 
-            Log.d(TAG, "Processed: HR=$heartRate mode=$mode genre=$genre — LocalBroadcast action=${intent.action}")
+            Log.d(
+                TAG,
+                "Processed: HR=$heartRate mode=$mode genre=$genre rmssd=${"%.1f".format(rmssd)} " +
+                    "battery=$batteryLevel monitoring=$monitoring — LocalBroadcast action=${intent.action}"
+            )
 
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing message", e)
@@ -83,5 +96,7 @@ class AdaptifyMobileReceiver : WearableListenerService() {
         const val EXTRA_MODE = "mode"
         const val EXTRA_GENRE = "genre"
         const val EXTRA_UPDATED_AT = "updatedAt"
+        const val EXTRA_BATTERY_LEVEL = "batteryLevel"
+        const val EXTRA_MONITORING = "monitoring"
     }
 }

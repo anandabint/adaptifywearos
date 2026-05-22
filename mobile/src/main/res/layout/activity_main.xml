@@ -41,6 +41,24 @@
                     android:layout_marginBottom="8dp" />
 
                 <TextView
+                    android:id="@+id/tvConnectionStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="SEARCHING..."
+                    android:textAppearance="?attr/textAppearanceLabelLarge"
+                    android:textColor="#FF9800"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="4dp" />
+
+                <TextView
+                    android:id="@+id/tvBattery"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Watch Battery: --%"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
                     android:id="@+id/tvHeartRate"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
