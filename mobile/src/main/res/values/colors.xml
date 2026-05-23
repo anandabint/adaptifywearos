@@ -2,4 +2,17 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Surface -->
+    <color name="surface_bg">#0A0A0B</color>
+
+    <!-- Activity mode colors -->
+    <color name="mode_exercise">#10B981</color>
+    <color name="mode_stress">#EF4444</color>
+    <color name="mode_relax">#2E9BE6</color>
+
+    <!-- Connection status colors (Round 2 vibrant values) -->
+    <color name="status_online">#34D399</color>
+    <color name="status_searching">#FDE047</color>
+    <color name="status_offline">#F87171</color>
 </resources>

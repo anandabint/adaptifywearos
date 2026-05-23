@@ -212,9 +212,21 @@ class AdaptiveMusicService : Service() {
     }
 
     fun skipTrack() {
-        val tracks = MusicRepository.getTracksForGenre(this, currentGenre)
-        if (tracks.isEmpty()) return
-        val next = tracks.filter { it.uri != currentTrack?.uri }.randomOrNull() ?: tracks.random()
+        // Candidate pool: same genre first, fallback to all tracks
+        // This prevents replaying the same track when genre has only 1 track
+        val genreTracks = MusicRepository.getTracksForGenre(this, currentGenre)
+        val allTracks = MusicRepository.getAllTracks(this)
+
+        val pool = when {
+            genreTracks.size > 1 -> genreTracks  // enough tracks in genre
+            allTracks.size > 1   -> allTracks     // fallback to all tracks
+            else                 -> genreTracks   // only 1 track total, nothing to do
+        }
+
+        // Always exclude current track to avoid replaying
+        val next = pool.filter { it.uri != currentTrack?.uri }.randomOrNull()
+            ?: return  // truly only 1 track in entire library — skip does nothing
+
         if (currentPlayer?.isPlaying == true) crossfadeTo(next) else startTrack(next)
     }
 

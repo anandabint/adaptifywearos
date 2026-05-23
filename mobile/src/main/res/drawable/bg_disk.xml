@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Outer glow -->
+    <item android:top="4dp" android:bottom="4dp"
+          android:left="4dp" android:right="4dp">
+        <shape android:shape="oval">
+            <solid android:color="#2E9BE640" />
+        </shape>
+    </item>
+    <!-- Main disk -->
+    <item android:top="8dp" android:bottom="8dp"
+          android:left="8dp" android:right="8dp">
+        <shape android:shape="oval">
+            <gradient android:type="radial"
+                      android:gradientRadius="70dp"
+                      android:startColor="#1A1A1A"
+                      android:centerColor="#0E0E0E"
+                      android:endColor="#000000" />
+            <stroke android:width="3dp" android:color="#2E9BE6" />
+        </shape>
+    </item>
+    <!-- Grooves -->
+    <item android:top="24dp" android:bottom="24dp"
+          android:left="24dp" android:right="24dp">
+        <shape android:shape="oval">
+            <stroke android:width="1dp" android:color="#444444"
+                    android:dashWidth="4dp" android:dashGap="2dp" />
+        </shape>
+    </item>
+    <!-- Center gradient -->
+    <item android:top="58dp" android:bottom="58dp"
+          android:left="58dp" android:right="58dp">
+        <shape android:shape="oval">
+            <gradient android:type="radial"
+                      android:gradientRadius="40dp"
+                      android:startColor="#2E9BE6"
+                      android:centerColor="#0E7C8A"
+                      android:endColor="#1A1A1A" />
+        </shape>
+    </item>
+</layer-list>

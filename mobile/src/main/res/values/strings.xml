@@ -1,3 +1,23 @@
 <resources>
     <string name="app_name">Adaptify</string>
+    <string name="settings">Settings</string>
+    <string name="dark_mode">Dark Mode</string>
+    <string name="language">Language</string>
+    <string name="app_info">App Info</string>
+    <string name="adaptive_mode">Adaptive Mode</string>
+    <string name="adaptive_mode_off">Adaptive Mode (OFF)</string>
+    <string name="browse_music">Browse Music</string>
+    <string name="manage_music">Manage Music</string>
+    <string name="watch_data">Watch Data</string>
+    <string name="now_playing">Now Playing</string>
+    <string name="no_track_playing">No track playing</string>
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="skip">Skip</string>
+    <string name="version">Version</string>
+    <string name="developer">Developer</string>
+    <string name="developer_name">Politeknik Negeri Malang</string>
+    <string name="app_description">Adaptive music player based on physiological signals from Wear OS smartwatch.</string>
+    <string name="language_id">Indonesia</string>
+    <string name="language_en">English</string>
 </resources>

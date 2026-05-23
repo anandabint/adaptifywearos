@@ -8,15 +8,17 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
-import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.view.animation.AnimationUtils
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.adaptify.mobile.databinding.ActivityMainBinding
 import java.text.SimpleDateFormat
@@ -31,6 +33,11 @@ class MainActivity : AppCompatActivity() {
     private var musicService: AdaptiveMusicService? = null
     private var isBound = false
     private var lastGenre = ""
+    private var isAdaptiveMode: Boolean
+        get() = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getBoolean(KEY_ADAPTIVE_MODE, true)  // default ON
+        set(value) = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putBoolean(KEY_ADAPTIVE_MODE, value).apply()
 
     private val lastDataTime = AtomicLong(0L)
     private val watchMonitoring = AtomicBoolean(true)
@@ -79,9 +86,8 @@ class MainActivity : AppCompatActivity() {
             updateBatteryUI(battery)
             refreshConnectionStatus()
 
-            // Only auto-play when the watch is actively monitoring; pausing on the watch
-            // shouldn't trigger a music genre change on the phone.
-            if (monitoring && genre.isNotEmpty() && genre != lastGenre) {
+            // Auto-switch genre hanya saat Adaptive Mode ON
+            if (isAdaptiveMode && monitoring && genre.isNotEmpty() && genre != lastGenre) {
                 lastGenre = genre
                 musicService?.playForGenre(genre)
             }
@@ -89,13 +95,32 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
+
+        // Apply saved night mode
+        val prefs = getSharedPreferences("adaptify_prefs", Context.MODE_PRIVATE)
+        val nightMode = prefs.getInt("night_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+        AppCompatDelegate.setDefaultNightMode(nightMode)
+
+        // Apply saved language
+        val lang = prefs.getString("language", "en") ?: "en"
+        val locale = java.util.Locale(lang)
+        java.util.Locale.setDefault(locale)
+        val config = android.content.res.Configuration(resources.configuration)
+        config.setLocale(locale)
+        resources.updateConfiguration(config, resources.displayMetrics)
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         MusicRepository.migrateGenres(this)
         setContentView(binding.root)
         requestRuntimePermissions()
         setupButtons()
         startAndBindMusicService()
+
+        // Subtle fade-in for the content on first paint
+        val fadeIn = AnimationUtils.loadAnimation(this, R.anim.fade_in)
+        binding.main.getChildAt(0)?.startAnimation(fadeIn)
     }
 
     override fun onStart() {
@@ -113,6 +138,9 @@ class MainActivity : AppCompatActivity() {
         }
         refreshConnectionStatus()
         statusHandler.post(statusTicker)
+        binding.switchAdaptive.isChecked = isAdaptiveMode
+        binding.tvAdaptiveLabel.text =
+            if (isAdaptiveMode) "Adaptive Mode" else "Adaptive Mode (OFF)"
     }
 
     override fun onStop() {
@@ -151,6 +179,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupButtons() {
+        binding.btnSettings.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
         binding.btnBrowseMusic.setOnClickListener {
             startActivity(Intent(this, MusicBrowserActivity::class.java))
         }
@@ -163,6 +194,11 @@ class MainActivity : AppCompatActivity() {
         }
         binding.btnSkip.setOnClickListener {
             musicService?.skipTrack()
+        }
+        binding.switchAdaptive.setOnCheckedChangeListener { _, isChecked ->
+            isAdaptiveMode = isChecked  // auto-persist via property setter
+            binding.tvAdaptiveLabel.text =
+                if (isChecked) "Adaptive Mode" else "Adaptive Mode (OFF)"
         }
     }
 
@@ -183,7 +219,21 @@ class MainActivity : AppCompatActivity() {
         binding.tvSteps.text = "Steps (session): $steps"
         binding.tvRmssd.text = "HRV (RMSSD): ${"%.1f".format(rmssd)} ms"
         binding.tvHrvScore.text = "HRV Score: ${computeHrvScore(rmssd)} / 100"
-        binding.tvActivityMode.text = "Mode: ${mode.ifEmpty { "--" }}"
+
+        // Mode badge with emoji + color per activity mode
+        val (modeText, modeColor) = when {
+            mode.contains("EXERCISE", ignoreCase = true) ->
+                "🏃 ${mode.uppercase()}" to ContextCompat.getColor(this, R.color.mode_exercise)
+            mode.contains("STRESS", ignoreCase = true) ->
+                "😰 ${mode.uppercase()}" to ContextCompat.getColor(this, R.color.mode_stress)
+            mode.contains("RELAX", ignoreCase = true) ->
+                "😌 ${mode.uppercase()}" to ContextCompat.getColor(this, R.color.mode_relax)
+            else ->
+                mode.ifEmpty { "--" } to ContextCompat.getColor(this, R.color.mode_relax)
+        }
+        binding.tvActivityMode.text = modeText
+        binding.tvActivityMode.setTextColor(modeColor)
+
         binding.tvGenre.text = "Genre: ${genre.ifEmpty { "--" }}"
     }
 
@@ -211,10 +261,10 @@ class MainActivity : AppCompatActivity() {
         val ageMs = now - last
 
         val (statusText, statusColor) = when {
-            last == 0L -> "SEARCHING..." to COLOR_SEARCHING
-            ageMs > DATA_TIMEOUT_MS -> "SEARCHING..." to COLOR_SEARCHING
-            !watchMonitoring.get() -> "DISCONNECTED" to COLOR_DISCONNECTED
-            else -> "WATCH LINK ACTIVE" to COLOR_ACTIVE
+            last == 0L -> "SEARCHING..." to ContextCompat.getColor(this, R.color.status_searching)
+            ageMs > DATA_TIMEOUT_MS -> "SEARCHING..." to ContextCompat.getColor(this, R.color.status_searching)
+            !watchMonitoring.get() -> "DISCONNECTED" to ContextCompat.getColor(this, R.color.status_offline)
+            else -> "WATCH LINK ACTIVE" to ContextCompat.getColor(this, R.color.status_online)
         }
         binding.tvConnectionStatus.text = statusText
         binding.tvConnectionStatus.setTextColor(statusColor)
@@ -250,8 +300,7 @@ class MainActivity : AppCompatActivity() {
         private const val REQUEST_PERMISSIONS = 100
         private const val STATUS_TICK_MS = 1_000L
         private const val DATA_TIMEOUT_MS = 10_000L
-        private val COLOR_ACTIVE = Color.parseColor("#4CAF50")
-        private val COLOR_SEARCHING = Color.parseColor("#FF9800")
-        private val COLOR_DISCONNECTED = Color.parseColor("#9E9E9E")
+        private const val PREFS_NAME = "adaptify_prefs"
+        private const val KEY_ADAPTIVE_MODE = "adaptive_mode"
     }
 }

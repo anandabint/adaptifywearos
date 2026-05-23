@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">Adaptify</string>
+    <string name="settings">Pengaturan</string>
+    <string name="dark_mode">Mode Gelap</string>
+    <string name="language">Bahasa</string>
+    <string name="app_info">Info Aplikasi</string>
+    <string name="adaptive_mode">Mode Adaptif</string>
+    <string name="adaptive_mode_off">Mode Adaptif (MATI)</string>
+    <string name="browse_music">Telusuri Musik</string>
+    <string name="manage_music">Kelola Musik</string>
+    <string name="watch_data">Data Jam Tangan</string>
+    <string name="now_playing">Sedang Diputar</string>
+    <string name="no_track_playing">Tidak ada lagu yang diputar</string>
+    <string name="play">Putar</string>
+    <string name="pause">Jeda</string>
+    <string name="skip">Lewati</string>
+    <string name="version">Versi</string>
+    <string name="developer">Pengembang</string>
+    <string name="developer_name">Politeknik Negeri Malang</string>
+    <string name="app_description">Pemutar musik adaptif berdasarkan sinyal fisiologis dari smartwatch Wear OS.</string>
+    <string name="language_id">Indonesia</string>
+    <string name="language_en">Inggris</string>
+</resources>

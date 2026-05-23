@@ -1,9 +1,16 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.AdaptifyWearOs" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="android:windowBackground">@color/surface_bg</item>
     </style>
 
     <style name="Theme.AdaptifyWearOs" parent="Base.Theme.AdaptifyWearOs" />
+
+    <!-- Splash screen theme used as launch theme for MainActivity. -->
+    <style name="Theme.AdaptifyWearOs.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/surface_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="windowSplashScreenAnimationDuration">2000</item>
+        <item name="postSplashScreenTheme">@style/Theme.AdaptifyWearOs</item>
+    </style>
 </resources>

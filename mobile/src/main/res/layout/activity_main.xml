@@ -12,12 +12,32 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Adaptify"
-            android:textAppearance="?attr/textAppearanceHeadlineMedium"
-            android:layout_marginBottom="16dp" />
+        <!-- Toolbar manual (tema NoActionBar) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Adaptify"
+                android:textAppearance="?attr/textAppearanceHeadlineMedium"
+                android:textStyle="bold" />
+
+            <ImageButton
+                android:id="@+id/btnSettings"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@android:drawable/ic_menu_preferences"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Settings"
+                android:padding="8dp" />
+
+        </LinearLayout>
 
         <!-- Watch Data Card -->
         <androidx.cardview.widget.CardView
@@ -89,12 +109,14 @@
 
                 <TextView
                     android:id="@+id/tvActivityMode"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Mode: --"
-                    android:textAppearance="?attr/textAppearanceBodyLarge"
+                    android:text="--"
+                    android:textSize="17sp"
                     android:textStyle="bold"
-                    android:layout_marginTop="4dp" />
+                    android:background="@drawable/bg_mode_badge"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="4dp" />
 
                 <TextView
                     android:id="@+id/tvGenre"
@@ -136,6 +158,15 @@
                     android:textAppearance="?attr/textAppearanceTitleMedium"
                     android:layout_marginBottom="8dp" />
 
+                <View
+                    android:id="@+id/vinylDisk"
+                    android:layout_width="150dp"
+                    android:layout_height="150dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="12dp"
+                    android:background="@drawable/bg_disk" />
+
                 <TextView
                     android:id="@+id/tvCurrentTrack"
                     android:layout_width="match_parent"
@@ -145,6 +176,30 @@
                     android:ellipsize="end"
                     android:maxLines="1"
                     android:layout_marginBottom="12dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="8dp">
+
+                    <TextView
+                        android:id="@+id/tvAdaptiveLabel"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Adaptive Mode"
+                        android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchAdaptive"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true" />
+
+                </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
