@@ -3,28 +3,278 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:background="@color/surface_white">
 
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/toolbar"
+    <!-- HEADER -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="?attr/colorSurface"
-        app:title="Manage Music"
-        app:titleTextColor="?attr/colorOnSurface" />
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="16dp"
+        android:background="@color/surface_white"
+        android:elevation="2dp">
 
-    <androidx.core.widget.NestedScrollView
+        <!-- Back Button -->
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@android:drawable/ic_menu_revert"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Back"
+            android:tint="@color/text_dark" />
+
+        <!-- Title -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="KELOLA MUSIK ADAPTIF"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_dark" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="LOCAL FILE INVENTORY"
+                android:textSize="10sp"
+                android:textColor="@color/text_gray"
+                android:letterSpacing="0.1"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+
+        <!-- File Counter -->
+        <TextView
+            android:id="@+id/tvFileCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="MODE FILES: 0"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_gray"
+            android:letterSpacing="0.1" />
+    </LinearLayout>
+
+    <!-- TAB SELECTOR -->
+    <HorizontalScrollView
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_height="wrap_content"
+        android:scrollbars="none"
+        android:background="@color/surface_white"
+        android:elevation="1dp"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp">
 
         <LinearLayout
-            android:id="@+id/llSections"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/tabExercise"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="EXERCISE"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/surface_white"
+                app:backgroundTint="@color/text_dark"
+                app:cornerRadius="20dp"
+                android:layout_marginEnd="8dp"
+                android:paddingHorizontal="24dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/tabStress"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="STRESS"
+                android:textSize="12sp"
+                android:textColor="@color/text_gray"
+                app:cornerRadius="20dp"
+                app:strokeColor="@color/text_gray"
+                android:layout_marginEnd="8dp"
+                android:paddingHorizontal="24dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/tabRelax"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="RELAX"
+                android:textSize="12sp"
+                android:textColor="@color/text_gray"
+                app:cornerRadius="20dp"
+                app:strokeColor="@color/text_gray"
+                android:paddingHorizontal="24dp" />
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <!-- CONTENT AREA -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp" />
+            android:padding="16dp">
 
-    </androidx.core.widget.NestedScrollView>
+            <!-- MODE HEADER -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🎧"
+                    android:textSize="20sp"
+                    android:layout_marginEnd="8dp" />
+
+                <TextView
+                    android:id="@+id/tvModeHeader"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="EXERCISE MODE"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_dark"
+                    android:letterSpacing="0.1" />
+
+                <!-- Add Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAddMusic"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="+ TAMBAH LAGU"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/surface_white"
+                    app:backgroundTint="@color/accent_purple"
+                    app:cornerRadius="20dp"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="8dp" />
+            </LinearLayout>
+
+            <!-- MUSIC LIST CONTAINER -->
+            <LinearLayout
+                android:id="@+id/musicListContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- Sample Music Item -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="1dp"
+                    app:cardBackgroundColor="@color/surface_white">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="16dp">
+
+                        <!-- Album Art Placeholder -->
+                        <androidx.cardview.widget.CardView
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            app:cardCornerRadius="8dp"
+                            app:cardBackgroundColor="#E0E0E0">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:text="🎵"
+                                android:textSize="28sp"
+                                android:gravity="center" />
+                        </androidx.cardview.widget.CardView>
+
+                        <!-- Track Info -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:layout_marginStart="12dp">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="dragon-studio-notification-s..."
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/text_dark"
+                                android:ellipsize="end"
+                                android:maxLines="1" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Exercise Music"
+                                android:textSize="12sp"
+                                android:textColor="@color/text_gray"
+                                android:layout_marginTop="4dp" />
+                        </LinearLayout>
+
+                        <!-- Duration -->
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="3:15"
+                            android:textSize="13sp"
+                            android:textColor="@color/text_gray"
+                            android:layout_marginEnd="12dp" />
+
+                        <!-- Delete Button -->
+                        <ImageButton
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@android:drawable/ic_menu_delete"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="Delete"
+                            android:tint="@color/text_gray" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Empty State Message -->
+                <TextView
+                    android:id="@+id/tvEmptyState"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Belum ada musik untuk mode ini.\nTap '+ TAMBAH LAGU' untuk menambahkan."
+                    android:textSize="13sp"
+                    android:textColor="@color/text_gray"
+                    android:gravity="center"
+                    android:padding="32dp"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
 
 </LinearLayout>
