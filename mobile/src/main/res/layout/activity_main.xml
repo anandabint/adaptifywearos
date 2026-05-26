@@ -4,6 +4,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/surface_bg"
     android:fillViewport="true">
 
     <LinearLayout
@@ -12,169 +13,259 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Toolbar manual (tema NoActionBar) -->
+        <!-- TOP BAR Enhanced -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="56dp"
+            android:layout_height="64dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="8dp">
+            android:layout_marginBottom="14dp">
 
-            <TextView
+            <ImageView
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:src="@mipmap/ic_launcher"
+                android:layout_marginEnd="12dp"
+                android:contentDescription="App logo" />
+
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Adaptify"
-                android:textAppearance="?attr/textAppearanceHeadlineMedium"
-                android:textStyle="bold" />
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="ADAPTIFY"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.05" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Bio-Adaptive Music"
+                    android:textSize="11sp"
+                    android:alpha="0.7"
+                    android:layout_marginTop="2dp" />
+            </LinearLayout>
 
             <ImageButton
                 android:id="@+id/btnSettings"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:src="@android:drawable/ic_menu_preferences"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Settings"
                 android:padding="8dp" />
-
         </LinearLayout>
 
-        <!-- Watch Data Card -->
+        <!-- WATCH DATA CARD -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="4dp">
+            app:cardCornerRadius="24dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@color/surface_card">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="18dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Watch Data"
-                    android:textAppearance="?attr/textAppearanceTitleMedium"
-                    android:layout_marginBottom="8dp" />
-
-                <TextView
-                    android:id="@+id/tvConnectionStatus"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="SEARCHING..."
-                    android:textAppearance="?attr/textAppearanceLabelLarge"
-                    android:textColor="#FF9800"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="4dp" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
 
-                <TextView
-                    android:id="@+id/tvBattery"
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="WATCH DATA"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:alpha="0.6"
+                        android:letterSpacing="0.1" />
+
+                    <TextView
+                        android:id="@+id/tvConnectionStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="SEARCHING..."
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/status_searching" />
+                </LinearLayout>
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Watch Battery: --%"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
-                    android:layout_marginBottom="8dp" />
+                    android:orientation="horizontal"
+                    android:baselineAligned="false"
+                    android:layout_marginBottom="12dp">
 
-                <TextView
-                    android:id="@+id/tvHeartRate"
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvHeartRate"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Heart Rate: -- BPM"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvRmssd"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="HRV: -- ms"
+                            android:textSize="13sp"
+                            android:alpha="0.8"
+                            android:layout_marginTop="2dp" />
+
+                        <TextView
+                            android:id="@+id/tvHrvScore"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Score: -- / 100"
+                            android:textSize="12sp"
+                            android:alpha="0.6"
+                            android:layout_marginTop="2dp" />
+
+                        <TextView
+                            android:id="@+id/tvSteps"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Steps: --"
+                            android:textSize="12sp"
+                            android:alpha="0.7"
+                            android:layout_marginTop="4dp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="end">
+
+                        <TextView
+                            android:id="@+id/tvActivityMode"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/mode_relax"
+                            android:background="@drawable/bg_mode_badge" />
+
+                        <TextView
+                            android:id="@+id/tvGenre"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Genre: --"
+                            android:textSize="11sp"
+                            android:alpha="0.7"
+                            android:layout_marginTop="6dp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/divider_subtle"
+                    android:layout_marginVertical="8dp" />
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Heart Rate: -- BPM"
-                    android:textAppearance="?attr/textAppearanceBodyLarge" />
+                    android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/tvSteps"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Steps: --"
-                    android:textAppearance="?attr/textAppearanceBodyLarge" />
+                    <TextView
+                        android:id="@+id/tvBattery"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Battery: --%"
+                        android:textSize="11sp"
+                        android:alpha="0.6" />
 
-                <TextView
-                    android:id="@+id/tvRmssd"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="HRV (RMSSD): -- ms"
-                    android:textAppearance="?attr/textAppearanceBodyLarge" />
-
-                <TextView
-                    android:id="@+id/tvHrvScore"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="HRV Score: -- / 100"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
-                    android:alpha="0.8" />
-
-                <TextView
-                    android:id="@+id/tvActivityMode"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="--"
-                    android:textSize="17sp"
-                    android:textStyle="bold"
-                    android:background="@drawable/bg_mode_badge"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginBottom="4dp" />
-
-                <TextView
-                    android:id="@+id/tvGenre"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Genre: --"
-                    android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-                <TextView
-                    android:id="@+id/tvLastUpdated"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Waiting for watch data..."
-                    android:textAppearance="?attr/textAppearanceBodySmall"
-                    android:alpha="0.6"
-                    android:layout_marginTop="4dp" />
-
+                    <TextView
+                        android:id="@+id/tvLastUpdated"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Waiting..."
+                        android:textSize="11sp"
+                        android:alpha="0.6" />
+                </LinearLayout>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Now Playing Card -->
+        <!-- NOW PLAYING CARD -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="4dp">
+            app:cardCornerRadius="24dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@color/surface_card">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="18dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Now Playing"
-                    android:textAppearance="?attr/textAppearanceTitleMedium"
-                    android:layout_marginBottom="8dp" />
+                    android:text="NOW PLAYING"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:alpha="0.6"
+                    android:letterSpacing="0.1"
+                    android:layout_marginBottom="12dp" />
 
-                <View
-                    android:id="@+id/vinylDisk"
-                    android:layout_width="150dp"
-                    android:layout_height="150dp"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="4dp"
-                    android:layout_marginBottom="12dp"
-                    android:background="@drawable/bg_disk" />
+                <FrameLayout
+                    android:layout_width="140dp"
+                    android:layout_height="140dp"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="10dp">
+
+                    <ImageView
+                        android:id="@+id/imgDisk"
+                        android:layout_width="140dp"
+                        android:layout_height="140dp"
+                        android:src="@drawable/bg_disk"
+                        android:contentDescription="Music disk" />
+
+                    <ImageView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_gravity="center"
+                        android:src="@mipmap/ic_launcher"
+                        android:contentDescription="Center logo" />
+                </FrameLayout>
 
                 <TextView
                     android:id="@+id/tvCurrentTrack"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="No track playing"
-                    android:textAppearance="?attr/textAppearanceBodyLarge"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
                     android:ellipsize="end"
-                    android:maxLines="1"
+                    android:maxLines="2"
                     android:layout_marginBottom="12dp" />
 
                 <LinearLayout
@@ -182,8 +273,7 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginBottom="8dp">
+                    android:layout_marginBottom="12dp">
 
                     <TextView
                         android:id="@+id/tvAdaptiveLabel"
@@ -191,14 +281,14 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Adaptive Mode"
-                        android:textAppearance="?attr/textAppearanceBodyLarge" />
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
 
                     <com.google.android.material.switchmaterial.SwitchMaterial
                         android:id="@+id/switchAdaptive"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:checked="true" />
-
                 </LinearLayout>
 
                 <LinearLayout
@@ -209,49 +299,50 @@
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnPlayPause"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="50dp"
                         android:layout_weight="1"
                         android:text="Play"
+                        app:cornerRadius="16dp"
                         android:layout_marginEnd="8dp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnSkip"
                         style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="50dp"
                         android:layout_weight="1"
-                        android:text="Skip" />
-
+                        android:text="Skip"
+                        app:cornerRadius="16dp" />
                 </LinearLayout>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Browse + Manage Music Buttons -->
+        <!-- ACTION BUTTONS -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="8dp">
+            android:orientation="horizontal">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnBrowseMusic"
                 android:layout_width="0dp"
-                android:layout_height="56dp"
+                android:layout_height="54dp"
                 android:layout_weight="1"
                 android:layout_marginEnd="6dp"
                 android:text="Browse Music"
                 android:textColor="@android:color/white"
-                app:backgroundTint="#1976D2" />
+                app:backgroundTint="@color/brand_blue"
+                app:cornerRadius="18dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnManageMusic"
                 android:layout_width="0dp"
-                android:layout_height="56dp"
+                android:layout_height="54dp"
                 android:layout_weight="1"
                 android:text="Manage Music"
                 android:textColor="@android:color/white"
-                app:backgroundTint="#4CAF50" />
-
+                app:backgroundTint="@color/brand_green"
+                app:cornerRadius="18dp" />
         </LinearLayout>
 
     </LinearLayout>
