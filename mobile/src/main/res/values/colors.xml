@@ -3,22 +3,41 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- Surface -->
-    <color name="surface_bg">#0A0A0B</color>
-    <color name="surface_card">#18181B</color>
-    <color name="divider_subtle">#27272A</color>
+    <!-- Blue Gradient Background -->
+    <color name="gradient_top">#0A4FC0</color>
+    <color name="gradient_center">#05368A</color>
+    <color name="gradient_bottom">#011440</color>
 
-    <!-- Activity mode colors -->
+    <!-- Surface -->
+    <color name="surface_card_translucent">#15FFFFFF</color>
+    <color name="surface_white">#FFFFFF</color>
+
+    <!-- Accent -->
+    <color name="accent_emerald">#10B981</color>
+    <color name="accent_purple">#6366F1</color>
+
+    <!-- Text -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B0C4DE</color>
+    <color name="text_dark">#000000</color>
+    <color name="text_gray">#717178</color>
+
+    <!-- Mode colors -->
     <color name="mode_exercise">#10B981</color>
     <color name="mode_stress">#EF4444</color>
-    <color name="mode_relax">#2E9BE6</color>
+    <color name="mode_relax">#10B981</color>
 
-    <!-- Connection status colors -->
-    <color name="status_online">#34D399</color>
+    <!-- Status -->
+    <color name="status_synced">#10B981</color>
     <color name="status_searching">#FDE047</color>
-    <color name="status_offline">#F87171</color>
 
-    <!-- Brand colors -->
-    <color name="brand_blue">#1976D2</color>
-    <color name="brand_green">#4CAF50</color>
+    <!-- Genre badges -->
+    <color name="badge_exercise">#6366F1</color>
+    <color name="badge_stress">#F59E0B</color>
+    <color name="badge_relax">#10B981</color>
+
+    <!-- Legacy colors (untuk themes.xml) -->
+    <color name="surface_bg">#011440</color>
+    <color name="status_offline">#EF4444</color>
+    <color name="status_online">#10B981</color>
 </resources>

@@ -19,6 +19,9 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.adaptify.mobile.databinding.ActivityMainBinding
 import java.text.SimpleDateFormat
@@ -111,16 +114,30 @@ class MainActivity : AppCompatActivity() {
         config.setLocale(locale)
         resources.updateConfiguration(config, resources.displayMetrics)
 
+        // Edge-to-edge: biarkan gradient mengisi sampai status bar dan nav bar
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.statusBarColor = android.graphics.Color.TRANSPARENT
+        window.navigationBarColor = android.graphics.Color.TRANSPARENT
+        WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = false
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         MusicRepository.migrateGenres(this)
         setContentView(binding.root)
+
+        // Padding agar konten tidak masuk ke area status bar
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(0, systemBars.top, 0, systemBars.bottom)
+            insets
+        }
+
         requestRuntimePermissions()
         setupButtons()
         startAndBindMusicService()
 
         // Subtle fade-in for the content on first paint
         val fadeIn = AnimationUtils.loadAnimation(this, R.anim.fade_in)
-        binding.main.getChildAt(0)?.startAnimation(fadeIn)
+        binding.root.getChildAt(0)?.startAnimation(fadeIn)
     }
 
     override fun onStart() {
@@ -139,8 +156,6 @@ class MainActivity : AppCompatActivity() {
         refreshConnectionStatus()
         statusHandler.post(statusTicker)
         binding.switchAdaptive.isChecked = isAdaptiveMode
-        binding.tvAdaptiveLabel.text =
-            if (isAdaptiveMode) "Adaptive Mode" else "Adaptive Mode (OFF)"
     }
 
     override fun onStop() {
@@ -197,8 +212,6 @@ class MainActivity : AppCompatActivity() {
         }
         binding.switchAdaptive.setOnCheckedChangeListener { _, isChecked ->
             isAdaptiveMode = isChecked  // auto-persist via property setter
-            binding.tvAdaptiveLabel.text =
-                if (isChecked) "Adaptive Mode" else "Adaptive Mode (OFF)"
         }
     }
 
@@ -215,7 +228,7 @@ class MainActivity : AppCompatActivity() {
     private fun updateSensorUI(
         hr: Int, steps: Int, stressIndex: Int, rmssd: Double, mode: String, genre: String
     ) {
-        binding.tvHeartRate.text = "Heart Rate: $hr BPM"
+        binding.tvHeartRate.text = hr?.toString() ?: "--"
         binding.tvSteps.text = "Steps (session): $steps"
         binding.tvRmssd.text = "HRV (RMSSD): ${"%.1f".format(rmssd)} ms"
         binding.tvHrvScore.text = "HRV Score: ${computeHrvScore(rmssd)} / 100"

@@ -2,6 +2,10 @@
     <!-- Base application theme. -->
     <style name="Base.Theme.AdaptifyWearOs" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:windowBackground">@color/surface_bg</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 
     <style name="Theme.AdaptifyWearOs" parent="Base.Theme.AdaptifyWearOs" />
