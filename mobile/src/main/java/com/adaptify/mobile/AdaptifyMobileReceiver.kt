@@ -31,7 +31,6 @@ class AdaptifyMobileReceiver : WearableListenerService() {
             val json = JSONObject(jsonString)
             val heartRate = json.optInt(EXTRA_HEART_RATE, 0)
             val steps = json.optInt(EXTRA_STEPS, 0)
-            val stressIndex = json.optInt("stress", 0)
             val activityMode = json.optString(EXTRA_ACTIVITY_MODE, "")
             val activityConfidence = json.optDouble("activityConfidence", 0.0).toFloat()
             val rmssd = json.optDouble("rmssd", 0.0)
@@ -40,7 +39,7 @@ class AdaptifyMobileReceiver : WearableListenerService() {
 
             Log.d(
                 TAG,
-                "Parsed: hr=$heartRate steps=$steps stress=$stressIndex watchMode=$activityMode " +
+                "Parsed: hr=$heartRate steps=$steps watchMode=$activityMode " +
                     "conf=$activityConfidence rmssd=$rmssd battery=$batteryLevel monitoring=$monitoring"
             )
 
@@ -53,15 +52,14 @@ class AdaptifyMobileReceiver : WearableListenerService() {
 
             // Use watch-side classification (has full sensor context: RMSSD + SDHR + steps + accel)
             // Phone-side reclassification would lose SDHR and other signals.
-            val mode = activityMode.ifEmpty {
-                ActivityClassifier.classify(heartRate, rmssd)  // fallback if watch sends empty
-            }
+            // Jika watch tidak mengirim activityMode, data tidak cukup lengkap untuk keputusan
+            // valid (SDHR dan accel tidak tersedia di sisi HP). Default RELAX adalah pilihan aman.
+            val mode = activityMode.ifEmpty { "RELAX" }
             val genre = ActivityClassifier.getMusicGenre(mode)
 
             val snapshot = AdaptifyRealtimeSnapshot(
                 heartRate = heartRate,
                 steps = steps,
-                stressIndex = stressIndex,
                 mode = mode,
                 genre = genre,
                 updatedAtEpochMillis = System.currentTimeMillis(),
@@ -93,7 +91,6 @@ class AdaptifyMobileReceiver : WearableListenerService() {
         const val ACTION_DATA_UPDATED = "com.adaptify.mobile.ACTION_DATA_UPDATED"
         const val EXTRA_HEART_RATE = "heartRate"
         const val EXTRA_STEPS = "steps"
-        const val EXTRA_STRESS_INDEX = "stressIndex"
         const val EXTRA_RMSSD = "rmssd"
         const val EXTRA_ACTIVITY_MODE = "activityMode"
         const val EXTRA_ACTIVITY_CONFIDENCE = "activityConfidence"

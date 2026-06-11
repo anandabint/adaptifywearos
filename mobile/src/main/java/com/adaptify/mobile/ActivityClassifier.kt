@@ -25,6 +25,9 @@ object ActivityClassifier {
     const val GENRE_STRESS   = "Stress Relief"
     const val GENRE_RELAX    = "Relax Music"
 
+    // Note: fungsi ini tidak lagi digunakan sebagai fallback di AdaptifyMobileReceiver.
+    // Mode klasifikasi utama dikirim langsung dari watch (ActivityClassifier.kt Wear OS).
+    // Fungsi ini dipertahankan sebagai referensi threshold saja.
     fun classify(heartRate: Int, rmssd: Double): String = when {
         heartRate >= HR_EXERCISE_MIN -> "EXERCISE"
         heartRate in HR_STRESS_LOW..HR_STRESS_HIGH

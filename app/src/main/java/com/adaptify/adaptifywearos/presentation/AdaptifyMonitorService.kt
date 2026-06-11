@@ -137,7 +137,6 @@ class AdaptifyMonitorService : Service() {
                         val payload = AdaptifyRealtimePayload(
                             heartRate = heartRateState.bpm ?: 0,
                             steps = sensorSnapshot.steps ?: 0,
-                            stressIndex = stressReading.index,
                             activityMode = activityReading.mode.name,
                             activityConfidence = activityReading.confidence,
                             rmssd = stressReading.rmssd,
@@ -159,7 +158,7 @@ class AdaptifyMonitorService : Service() {
                                         heartRate = heartRateState.bpm ?: 0,
                                         steps = sensorSnapshot.steps ?: 0,
                                         stressIndex = stressReading.index,
-                                        rmssd = null,
+                                        rmssd = stressReading.rmssd.toFloat(),
                                         accelerometerMagnitude = accelMag,
                                         gyroscopeMagnitude = gyroMag,
                                         activityMode = activityReading.mode.name,
@@ -225,7 +224,6 @@ class AdaptifyMonitorService : Service() {
                 AdaptifyRealtimePayload(
                     heartRate = lastHr.bpm ?: 0,
                     steps = lastSensor.steps ?: 0,
-                    stressIndex = lastStress.index,
                     activityMode = lastActivity?.mode?.name ?: "RELAX",
                     activityConfidence = lastActivity?.confidence ?: 0f,
                     rmssd = lastStress.rmssd,

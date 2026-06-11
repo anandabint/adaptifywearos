@@ -74,7 +74,6 @@ class MainActivity : AppCompatActivity() {
             if (intent?.action != AdaptifyMobileReceiver.ACTION_DATA_UPDATED) return
             val hr = intent.getIntExtra(AdaptifyMobileReceiver.EXTRA_HEART_RATE, 0)
             val steps = intent.getIntExtra(AdaptifyMobileReceiver.EXTRA_STEPS, 0)
-            val stressIndex = intent.getIntExtra(AdaptifyMobileReceiver.EXTRA_STRESS_INDEX, 0)
             val rmssd = intent.getDoubleExtra(AdaptifyMobileReceiver.EXTRA_RMSSD, 0.0)
             val mode = intent.getStringExtra(AdaptifyMobileReceiver.EXTRA_ACTIVITY_MODE) ?: ""
             val genre = intent.getStringExtra(AdaptifyMobileReceiver.EXTRA_GENRE) ?: ""
@@ -85,7 +84,7 @@ class MainActivity : AppCompatActivity() {
             watchMonitoring.set(monitoring)
             watchBatteryLevel.set(battery.toLong())
 
-            updateSensorUI(hr, steps, stressIndex, rmssd, mode, genre)
+            updateSensorUI(hr, steps, rmssd, mode, genre)
             updateBatteryUI(battery)
             refreshConnectionStatus()
 
@@ -150,7 +149,7 @@ class MainActivity : AppCompatActivity() {
             lastDataTime.set(snap.updatedAtEpochMillis)
             watchMonitoring.set(snap.monitoring)
             watchBatteryLevel.set(snap.batteryLevel.toLong())
-            updateSensorUI(snap.heartRate, snap.steps, snap.stressIndex, snap.rmssd, snap.mode, snap.genre)
+            updateSensorUI(snap.heartRate, snap.steps, snap.rmssd, snap.mode, snap.genre)
             updateBatteryUI(snap.batteryLevel)
         }
         refreshConnectionStatus()
@@ -226,12 +225,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateSensorUI(
-        hr: Int, steps: Int, stressIndex: Int, rmssd: Double, mode: String, genre: String
+        hr: Int, steps: Int, rmssd: Double, mode: String, genre: String
     ) {
         binding.tvHeartRate.text = hr?.toString() ?: "--"
         binding.tvSteps.text = "Steps (session): $steps"
         binding.tvRmssd.text = "HRV (RMSSD): ${"%.1f".format(rmssd)} ms"
-        binding.tvHrvScore.text = "HRV Score: ${computeHrvScore(rmssd)} / 100"
 
         // Mode badge with emoji + color per activity mode
         val (modeText, modeColor) = when {
@@ -247,17 +245,19 @@ class MainActivity : AppCompatActivity() {
         binding.tvActivityMode.text = modeText
         binding.tvActivityMode.setTextColor(modeColor)
 
-        binding.tvGenre.text = "Genre: ${genre.ifEmpty { "--" }}"
-    }
+        binding.tvModeLabel.text = when {
+            mode.contains("EXERCISE", ignoreCase = true) -> "EXERCISE"
+            mode.contains("STRESS", ignoreCase = true)   -> "STRESS"
+            else                                          -> "RELAX"
+        }
 
-    // HRV Score normalisasi berdasarkan Shaffer & Ginsberg (2017):
-    // RMSSD <20ms = stress zone (score rendah)
-    // RMSSD 20-40ms = normal zone
-    // RMSSD >40ms = relaxed zone (score tinggi)
-    // Scale: 0ms = 0, 60ms = 100 (linear, capped)
-    private fun computeHrvScore(rmssd: Double): Int {
-        if (rmssd <= 0.0) return 0
-        return (rmssd / 60.0 * 100.0).toInt().coerceIn(0, 100)
+        binding.tvBodyStatus.text = when {
+            mode.contains("EXERCISE", ignoreCase = true) -> "Tubuh Anda sedang aktif berolahraga."
+            mode.contains("STRESS", ignoreCase = true)   -> "Tubuh Anda terdeteksi dalam kondisi stres."
+            else                                          -> "Tubuh Anda dalam keadaan santai & rileks."
+        }
+
+        binding.tvGenre.text = "Genre: ${genre.ifEmpty { "--" }}"
     }
 
     private fun updateBatteryUI(batteryLevel: Int) {
@@ -274,38 +274,38 @@ class MainActivity : AppCompatActivity() {
         val ageMs = now - last
 
         val (statusText, statusColor) = when {
-            last == 0L -> "SEARCHING..." to ContextCompat.getColor(this, R.color.status_searching)
-            ageMs > DATA_TIMEOUT_MS -> "SEARCHING..." to ContextCompat.getColor(this, R.color.status_searching)
-            !watchMonitoring.get() -> "DISCONNECTED" to ContextCompat.getColor(this, R.color.status_offline)
-            else -> "WATCH LINK ACTIVE" to ContextCompat.getColor(this, R.color.status_online)
+            last == 0L -> "MENCARI..." to ContextCompat.getColor(this, R.color.status_searching)
+            ageMs > DATA_TIMEOUT_MS -> "MENCARI..." to ContextCompat.getColor(this, R.color.status_searching)
+            !watchMonitoring.get() -> "TERPUTUS" to ContextCompat.getColor(this, R.color.status_offline)
+            else -> "JAM TANGAN TERHUBUNG" to ContextCompat.getColor(this, R.color.status_online)
         }
         binding.tvConnectionStatus.text = statusText
         binding.tvConnectionStatus.setTextColor(statusColor)
 
         binding.tvLastUpdated.text = if (last == 0L) {
-            "Waiting for watch data..."
+            "Menunggu data jam tangan..."
         } else {
-            "Last sync: ${formatRelativeAge(ageMs)} (${
+            "Pembaruan terakhir: ${formatRelativeAge(ageMs)} (${
                 SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date(last))
             })"
         }
     }
 
     private fun formatRelativeAge(ageMs: Long): String = when {
-        ageMs < 2_000 -> "just now"
-        ageMs < 60_000 -> "${ageMs / 1_000}s ago"
-        ageMs < 3_600_000 -> "${ageMs / 60_000}m ago"
-        else -> "${ageMs / 3_600_000}h ago"
+        ageMs < 2_000 -> "baru saja"
+        ageMs < 60_000 -> "${ageMs / 1_000} detik lalu"
+        ageMs < 3_600_000 -> "${ageMs / 60_000} menit lalu"
+        else -> "${ageMs / 3_600_000} jam lalu"
     }
 
     private fun updateTrackUI(track: MusicTrack?) {
         if (track != null) {
             binding.tvCurrentTrack.text = track.title
             binding.btnPlayPause.text =
-                if (musicService?.isPlaying == true) "Pause" else "Play"
+                if (musicService?.isPlaying == true) "Jeda" else "Putar"
         } else {
-            binding.tvCurrentTrack.text = "No track playing"
-            binding.btnPlayPause.text = "Play"
+            binding.tvCurrentTrack.text = "Tidak ada musik diputar"
+            binding.btnPlayPause.text = "Putar"
         }
     }
 

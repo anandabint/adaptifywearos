@@ -285,15 +285,15 @@ class AdaptiveMusicService : Service() {
         )
         val playPauseIcon =
             if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
-        val trackText = currentTrack?.title ?: "Ready"
+        val trackText = currentTrack?.title ?: "Siap"
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Adaptify Music")
+            .setContentTitle("Adaptify Musik")
             .setContentText(trackText)
             .setSmallIcon(android.R.drawable.ic_media_play)
             .setContentIntent(openIntent)
-            .addAction(playPauseIcon, if (isPlaying) "Pause" else "Play", toggleIntent)
-            .addAction(android.R.drawable.ic_media_next, "Skip", skipIntent)
+            .addAction(playPauseIcon, if (isPlaying) "Jeda" else "Putar", toggleIntent)
+            .addAction(android.R.drawable.ic_media_next, "Lewati", skipIntent)
             .setOngoing(true)
             .setSilent(true)
             .build()

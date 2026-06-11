@@ -148,37 +148,10 @@
                     android:orientation="horizontal"
                     android:layout_marginBottom="16dp">
 
-                    <!-- HRV Score -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="HRV SCORE (SKOR HRV)"
-                            android:textSize="9sp"
-                            android:textColor="#B0C4DE"
-                            android:letterSpacing="0.05"
-                            android:layout_marginBottom="4dp" />
-
-                        <TextView
-                            android:id="@+id/tvHrvScore"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="HRV Score: 8 / 100"
-                            android:textSize="14sp"
-                            android:textStyle="bold"
-                            android:textColor="#FFFFFF" />
-                    </LinearLayout>
-
                     <!-- RMSSD -->
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:orientation="vertical">
 
                         <TextView
@@ -384,16 +357,9 @@
                             android:id="@+id/imgDisk"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
-                            android:src="@drawable/bg_disk"
+                            android:src="@drawable/ic_vinyl_logo"
                             android:contentDescription="Vinyl disk" />
 
-                        <ImageView
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:layout_gravity="center"
-                            android:src="@android:drawable/stat_sys_download"
-                            android:tint="@color/accent_emerald"
-                            android:contentDescription="Center logo" />
                     </FrameLayout>
 
                     <!-- Track Info -->

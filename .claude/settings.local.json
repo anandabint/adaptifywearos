@@ -10,7 +10,8 @@
       "Bash(./gradlew assembleDebug --stacktrace)",
       "Bash(git add *)",
       "Bash(git commit *)",
-      "Bash(./gradlew.bat :mobile:assembleDebug)"
+      "Bash(./gradlew.bat :mobile:assembleDebug)",
+      "Bash(git *)"
     ]
   }
 }

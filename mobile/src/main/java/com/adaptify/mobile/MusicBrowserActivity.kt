@@ -248,7 +248,7 @@ class MusicBrowserActivity : AppCompatActivity() {
                 val svc = musicService
                 if (isBound && svc != null) {
                     svc.playTrackDirectly(track)
-                    Toast.makeText(this@MusicBrowserActivity, "▶ ${track.title}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MusicBrowserActivity, "▶ Memutar: ${track.title}", Toast.LENGTH_SHORT).show()
                     finish()
                 } else {
                     Toast.makeText(
