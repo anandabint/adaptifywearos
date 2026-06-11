@@ -9,8 +9,6 @@ data class SensorLog(
     val timestamp: Long,
     val heartRate: Int,
     val steps: Int,
-    val stressIndex: Int,
-    val rmssd: Float?,
     val accelerometerMagnitude: Float,
     val gyroscopeMagnitude: Float,
     val activityMode: String,

@@ -3,10 +3,9 @@ package com.adaptify.adaptifywearos.classifier
 import com.adaptify.adaptifywearos.health.HeartRateState
 import com.adaptify.adaptifywearos.sensor.SensorSnapshot
 import com.adaptify.adaptifywearos.sensor.Vector3Sample
-import com.adaptify.adaptifywearos.stress.StressReading
 import kotlin.math.sqrt
 
-enum class ActivityMode { EXERCISE, STRESS, RELAX }
+enum class ActivityMode { HIGH_ACTIVITY, LOW_ACTIVITY, RELAX }
 
 data class ActivityReading(
     val mode: ActivityMode,
@@ -19,26 +18,14 @@ class ActivityClassifier {
     companion object {
         // HR threshold — Ho et al., 2022, Sage Journals: "Wrist-worn wearable HR as exercise intensity proxy"
         private const val HR_EXERCISE_MIN = 100
-        private const val HR_STRESS_LOW = 60
-        private const val HR_STRESS_HIGH = 100
 
-        // Step cadence threshold — Tudor-Locke et al., 2021, Int J Behav Nutr Phys Act
+        // Step cadence threshold — Tudor-Locke et al., 2011, Int J Behav Nutr Phys Act
         // ≥100 steps/min = moderate-to-vigorous; <30 steps/min = sedentary
         private const val STEPS_EXERCISE_MIN_PER_MIN = 100
         private const val STEPS_SEDENTARY_MAX_PER_MIN = 30
 
-        // RMSSD threshold — Chalmers et al., 2022, Sensors MDPI; Shaffer & Ginsberg, 2017
-        // <20ms = sympathetic dominance (stress); ≥20ms = parasympathetic (relax)
-        private const val RMSSD_STRESS_MAX_MS = 20.0
-        private const val RMSSD_RELAX_MIN_MS = 20.0
-
-        // SDHR threshold — Castaneda et al., 2018, Sensors MDPI
-        // SDHR <3 BPM = stable HR = autonomic balance = relaxed
-        // SDHR ≥3 BPM = HR variability consistent with stress/arousal
-        private const val SDHR_RELAX_MAX_BPM = 3.0
-
         // Accelerometer magnitude thresholds in m/s² (1g = 9.81 m/s²)
-        // 1.5g exercise / 0.3g sedentary — Tudor-Locke et al., 2021
+        // 1.5g exercise / 0.3g sedentary — Tudor-Locke et al., 2011, Int J Behav Nutr Phys Act
         // Net acceleration (gravity-removed): 1.5g above gravity
         // TYPE_ACCELEROMETER includes gravity, so net threshold = (1.5g + 1g) × 9.81
         // Effective: user must generate 1.5g net movement on top of resting 1g
@@ -70,7 +57,6 @@ class ActivityClassifier {
     fun classify(
         sensorSnapshot: SensorSnapshot,
         heartRateState: HeartRateState,
-        stressReading: StressReading,
     ): ActivityReading {
         val nowMs = System.currentTimeMillis()
         updateStepRate(sensorSnapshot.steps, nowMs)
@@ -78,8 +64,6 @@ class ActivityClassifier {
         val raw = classifyInternal(
             heartRateBpm = heartRateState.bpm,
             stepsPerMinute = smoothedStepsPerMin.toInt(),
-            rmssd = stressReading.rmssd,
-            sdhr = stressReading.sdhr,
             accelMagnitudeMs2 = sensorSnapshot.accelerometer?.magnitude(),
             gyroMagnitudeRads = sensorSnapshot.gyroscope?.magnitude(),
         )
@@ -105,26 +89,24 @@ class ActivityClassifier {
     internal fun classifyInternal(
         heartRateBpm: Int?,
         stepsPerMinute: Int,
-        rmssd: Double,
-        sdhr: Double = 99.0,
         accelMagnitudeMs2: Float?,
         gyroMagnitudeRads: Float?,
     ): ActivityReading = when {
-        isExercise(heartRateBpm, stepsPerMinute, accelMagnitudeMs2, gyroMagnitudeRads) ->
-            buildExercise(heartRateBpm, stepsPerMinute, accelMagnitudeMs2, gyroMagnitudeRads)
-        isStress(heartRateBpm, stepsPerMinute, rmssd, sdhr) ->
-            buildStress(heartRateBpm, stepsPerMinute, rmssd)
+        isHighActivity(heartRateBpm, stepsPerMinute, accelMagnitudeMs2, gyroMagnitudeRads) ->
+            buildHighActivity(heartRateBpm, stepsPerMinute, accelMagnitudeMs2, gyroMagnitudeRads)
+        isLowActivity(stepsPerMinute) ->
+            buildLowActivity(heartRateBpm, stepsPerMinute)
         else ->
-            buildRelax(heartRateBpm, stepsPerMinute, rmssd)
+            buildRelax(heartRateBpm, stepsPerMinute)
     }
 
-    // EXERCISE requires elevated HR *with* at least one physical movement signal.
+    // HIGH_ACTIVITY requires elevated HR *with* at least one physical movement signal.
     // Rationale:
     //   HR >100 BPM alone can result from anxiety or autonomic response while sedentary.
     //   Ho et al. (2022) measured HR during physical activity — movement is an implicit context.
-    //   Tudor-Locke et al. (2021) explicitly uses step cadence ≥100/min as the MVPA marker.
+    //   Tudor-Locke et al. (2011) explicitly uses step cadence ≥100/min as the MVPA marker.
     //   Therefore: HR elevation is necessary but not sufficient without corroborating movement.
-    private fun isExercise(hr: Int?, steps: Int, accel: Float?, gyro: Float?): Boolean {
+    private fun isHighActivity(hr: Int?, steps: Int, accel: Float?, gyro: Float?): Boolean {
         if (hr == null || hr <= HR_EXERCISE_MIN) return false
         // HR > 100 confirmed — now require at least one movement signal
         return steps >= STEPS_EXERCISE_MIN_PER_MIN
@@ -132,21 +114,7 @@ class ActivityClassifier {
             || (gyro != null && gyro > GYRO_EXERCISE_RADS)
     }
 
-    // STRESS requires BOTH low RMSSD AND high SDHR.
-    // Rationale: RMSSD from averaged HR is unreliable on consumer wearables
-    // (Castaneda et al., 2018). SDHR ≥3 BPM as corroborating signal ensures
-    // we don't misclassify stable resting HR as stress.
-    // Both signals must agree: RMSSD <20ms (Chalmers 2022) AND SDHR ≥3 BPM
-    private fun isStress(hr: Int?, steps: Int, rmssd: Double, sdhr: Double): Boolean {
-        if (hr == null) return false
-        return hr in HR_STRESS_LOW..HR_STRESS_HIGH
-            && steps < STEPS_SEDENTARY_MAX_PER_MIN
-            && rmssd > 0.0
-            && rmssd < RMSSD_STRESS_MAX_MS
-            && sdhr >= SDHR_RELAX_MAX_BPM
-    }
-
-    private fun buildExercise(
+    private fun buildHighActivity(
         hr: Int?,
         steps: Int,
         accel: Float?,
@@ -173,31 +141,32 @@ class ActivityClassifier {
 
         val confidence = if (n == 0) 0.6f else (0.6f + score / n * 0.4f).coerceIn(0f, 1f)
         return ActivityReading(
-            mode = ActivityMode.EXERCISE,
+            mode = ActivityMode.HIGH_ACTIVITY,
             confidence = confidence,
-            reason = "EXERCISE: ${signals.joinToString(", ")}",
+            reason = "HIGH_ACTIVITY: ${signals.joinToString(", ")}",
         )
     }
 
-    private fun buildStress(hr: Int?, steps: Int, rmssd: Double): ActivityReading {
-        // Lower RMSSD → stronger sympathetic dominance → higher confidence
-        val deficit = (RMSSD_STRESS_MAX_MS - rmssd).coerceAtLeast(0.0)
-        val confidence = (0.6f + (deficit / RMSSD_STRESS_MAX_MS).toFloat() * 0.4f).coerceIn(0f, 1f)
+    // LOW_ACTIVITY: step cadence dalam rentang "light" menurut Tudor-Locke et al. (2011) —
+    // 30-99 steps/min menunjukkan aktivitas ringan (jalan santai, gerak badan ringan)
+    // tanpa mencapai ambang MVPA (>=100 steps/min).
+    private fun isLowActivity(steps: Int): Boolean {
+        return steps in STEPS_SEDENTARY_MAX_PER_MIN until STEPS_EXERCISE_MIN_PER_MIN
+    }
+
+    private fun buildLowActivity(hr: Int?, steps: Int): ActivityReading {
         return ActivityReading(
-            mode = ActivityMode.STRESS,
-            confidence = confidence,
-            reason = "STRESS: HR=${hr}bpm steps=${steps}/min RMSSD=${"%.1f".format(rmssd)}ms (<20ms)",
+            mode = ActivityMode.LOW_ACTIVITY,
+            confidence = 0.7f,
+            reason = "LOW_ACTIVITY: HR=${hr}bpm steps=${steps}/min",
         )
     }
 
-    private fun buildRelax(hr: Int?, steps: Int, rmssd: Double): ActivityReading {
-        // Higher RMSSD → stronger parasympathetic tone → higher confidence (cap saturates at 60ms)
-        val surplus = (rmssd - RMSSD_RELAX_MIN_MS).coerceIn(0.0, 40.0)
-        val confidence = (0.6f + (surplus / 40.0).toFloat() * 0.4f).coerceIn(0f, 1f)
+    private fun buildRelax(hr: Int?, steps: Int): ActivityReading {
         return ActivityReading(
             mode = ActivityMode.RELAX,
-            confidence = confidence,
-            reason = "RELAX: HR=${hr}bpm steps=${steps}/min RMSSD=${"%.1f".format(rmssd)}ms (≥20ms)",
+            confidence = 0.6f,
+            reason = "RELAX: HR=${hr}bpm steps=${steps}/min",
         )
     }
 

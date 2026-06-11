@@ -24,7 +24,7 @@
 
     <!-- Mode colors -->
     <color name="mode_exercise">#10B981</color>
-    <color name="mode_stress">#EF4444</color>
+    <color name="mode_low_activity">#EF4444</color>
     <color name="mode_relax">#10B981</color>
 
     <!-- Status -->
@@ -33,7 +33,7 @@
 
     <!-- Genre badges -->
     <color name="badge_exercise">#6366F1</color>
-    <color name="badge_stress">#F59E0B</color>
+    <color name="badge_low_activity">#F59E0B</color>
     <color name="badge_relax">#10B981</color>
 
     <!-- Legacy colors (untuk themes.xml) -->

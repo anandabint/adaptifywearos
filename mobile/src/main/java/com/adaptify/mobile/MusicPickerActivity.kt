@@ -20,7 +20,7 @@ import com.google.android.material.button.MaterialButton
 
 class MusicPickerActivity : AppCompatActivity() {
 
-    private var currentMode = "EXERCISE"
+    private var currentMode = "HIGH_ACTIVITY"
 
     private val filePickerLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -71,8 +71,8 @@ class MusicPickerActivity : AppCompatActivity() {
     }
 
     private fun setupTabs() {
-        findViewById<MaterialButton>(R.id.tabExercise).setOnClickListener { selectTab("EXERCISE") }
-        findViewById<MaterialButton>(R.id.tabStress).setOnClickListener { selectTab("STRESS") }
+        findViewById<MaterialButton>(R.id.tabExercise).setOnClickListener { selectTab("HIGH_ACTIVITY") }
+        findViewById<MaterialButton>(R.id.tabLowActivity).setOnClickListener { selectTab("LOW_ACTIVITY") }
         findViewById<MaterialButton>(R.id.tabRelax).setOnClickListener { selectTab("RELAX") }
     }
 
@@ -85,18 +85,18 @@ class MusicPickerActivity : AppCompatActivity() {
     private fun selectTab(mode: String) {
         currentMode = mode
         val tabExercise = findViewById<MaterialButton>(R.id.tabExercise)
-        val tabStress = findViewById<MaterialButton>(R.id.tabStress)
+        val tabLowActivity = findViewById<MaterialButton>(R.id.tabLowActivity)
         val tabRelax = findViewById<MaterialButton>(R.id.tabRelax)
 
-        listOf(tabExercise, tabStress, tabRelax).forEach { tab ->
+        listOf(tabExercise, tabLowActivity, tabRelax).forEach { tab ->
             tab.setTextColor(getColor(R.color.text_gray))
             tab.strokeColor = android.content.res.ColorStateList.valueOf(getColor(R.color.text_gray))
             tab.backgroundTintList = null
         }
 
         val activeTab = when (mode) {
-            "EXERCISE" -> tabExercise
-            "STRESS" -> tabStress
+            "HIGH_ACTIVITY" -> tabExercise
+            "LOW_ACTIVITY" -> tabLowActivity
             else -> tabRelax
         }
         activeTab.setTextColor(getColor(R.color.surface_white))
@@ -110,7 +110,7 @@ class MusicPickerActivity : AppCompatActivity() {
         val genre = getCurrentGenre()
         val tracks = MusicRepository.getTracksForGenre(this, genre)
 
-        findViewById<TextView>(R.id.tvModeHeader).text = "$currentMode MODE"
+        findViewById<TextView>(R.id.tvModeHeader).text = "${modeLabelFor(currentMode)} MODE"
         findViewById<TextView>(R.id.tvFileCount).text = "MODE FILES: ${tracks.size}"
 
         val container = findViewById<LinearLayout>(R.id.musicListContainer)
@@ -200,9 +200,15 @@ class MusicPickerActivity : AppCompatActivity() {
     }
 
     private fun getCurrentGenre(): String = when (currentMode) {
-        "EXERCISE" -> ActivityClassifier.GENRE_EXERCISE
-        "STRESS"   -> ActivityClassifier.GENRE_STRESS
-        else       -> ActivityClassifier.GENRE_RELAX
+        "HIGH_ACTIVITY" -> ActivityClassifier.GENRE_HIGH_ACTIVITY
+        "LOW_ACTIVITY"  -> ActivityClassifier.GENRE_LOW_ACTIVITY
+        else            -> ActivityClassifier.GENRE_RELAX
+    }
+
+    private fun modeLabelFor(mode: String): String = when (mode) {
+        "HIGH_ACTIVITY" -> "AKTIVITAS TINGGI"
+        "LOW_ACTIVITY"  -> "AKTIVITAS RINGAN"
+        else            -> "SANTAI"
     }
 
     private fun getFileNameFromUri(uri: Uri): String {

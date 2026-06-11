@@ -141,39 +141,6 @@
                 android:orientation="vertical"
                 android:padding="20dp">
 
-                <!-- Row 1: HRV Score + RMSSD -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="16dp">
-
-                    <!-- RMSSD -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="RMSSD"
-                            android:textSize="9sp"
-                            android:textColor="#B0C4DE"
-                            android:letterSpacing="0.05"
-                            android:layout_marginBottom="4dp" />
-
-                        <TextView
-                            android:id="@+id/tvRmssd"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="HRV (RMSSD): 5.2 ms"
-                            android:textSize="14sp"
-                            android:textStyle="bold"
-                            android:textColor="#FFFFFF" />
-                    </LinearLayout>
-                </LinearLayout>
-
                 <!-- Row 2: Steps + Battery -->
                 <LinearLayout
                     android:layout_width="match_parent"

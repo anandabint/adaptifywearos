@@ -84,7 +84,7 @@
                 style="@style/Widget.Material3.Button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="EXERCISE"
+                android:text="AKTIVITAS TINGGI"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:textColor="@color/surface_white"
@@ -94,11 +94,11 @@
                 android:paddingHorizontal="24dp" />
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/tabStress"
+                android:id="@+id/tabLowActivity"
                 style="@style/Widget.Material3.Button.OutlinedButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="STRESS"
+                android:text="AKTIVITAS RINGAN"
                 android:textSize="12sp"
                 android:textColor="@color/text_gray"
                 app:cornerRadius="20dp"
@@ -111,7 +111,7 @@
                 style="@style/Widget.Material3.Button.OutlinedButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="RELAX"
+                android:text="SANTAI"
                 android:textSize="12sp"
                 android:textColor="@color/text_gray"
                 app:cornerRadius="20dp"

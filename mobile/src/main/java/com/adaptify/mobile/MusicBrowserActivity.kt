@@ -78,8 +78,8 @@ class MusicBrowserActivity : AppCompatActivity() {
 
         val chips = listOf(
             "ALL" to R.id.chipAll,
-            "EXERCISE" to R.id.chipExercise,
-            "STRESS" to R.id.chipStress,
+            "HIGH_ACTIVITY" to R.id.chipExercise,
+            "LOW_ACTIVITY" to R.id.chipLowActivity,
             "RELAX" to R.id.chipRelax,
         )
         chips.forEach { (filter, viewId) ->
@@ -102,17 +102,17 @@ class MusicBrowserActivity : AppCompatActivity() {
 
     private fun setActiveChip(filter: String) {
         currentFilter = filter
-        val chipIds = listOf(R.id.chipAll, R.id.chipExercise, R.id.chipStress, R.id.chipRelax)
+        val chipIds = listOf(R.id.chipAll, R.id.chipExercise, R.id.chipLowActivity, R.id.chipRelax)
         chipIds.forEach { id ->
             val chip = findViewById<MaterialButton>(id)
             chip.setTextColor(getColor(R.color.text_gray))
             chip.strokeColor = android.content.res.ColorStateList.valueOf(getColor(R.color.text_gray))
         }
         val activeId = when (filter) {
-            "ALL"      -> R.id.chipAll
-            "EXERCISE" -> R.id.chipExercise
-            "STRESS"   -> R.id.chipStress
-            else       -> R.id.chipRelax
+            "ALL"           -> R.id.chipAll
+            "HIGH_ACTIVITY" -> R.id.chipExercise
+            "LOW_ACTIVITY"  -> R.id.chipLowActivity
+            else            -> R.id.chipRelax
         }
         val active = findViewById<MaterialButton>(activeId)
         active.setTextColor(getColor(R.color.text_dark))
@@ -122,10 +122,10 @@ class MusicBrowserActivity : AppCompatActivity() {
 
     private fun renderTrackList() {
         val allTracks = when (currentFilter) {
-            "ALL"      -> MusicRepository.getAllTracks(this)
-            "EXERCISE" -> MusicRepository.getTracksForGenre(this, ActivityClassifier.GENRE_EXERCISE)
-            "STRESS"   -> MusicRepository.getTracksForGenre(this, ActivityClassifier.GENRE_STRESS)
-            else       -> MusicRepository.getTracksForGenre(this, ActivityClassifier.GENRE_RELAX)
+            "ALL"           -> MusicRepository.getAllTracks(this)
+            "HIGH_ACTIVITY" -> MusicRepository.getTracksForGenre(this, ActivityClassifier.GENRE_HIGH_ACTIVITY)
+            "LOW_ACTIVITY"  -> MusicRepository.getTracksForGenre(this, ActivityClassifier.GENRE_LOW_ACTIVITY)
+            else            -> MusicRepository.getTracksForGenre(this, ActivityClassifier.GENRE_RELAX)
         }
 
         val filtered = if (searchQuery.isBlank()) allTracks
@@ -154,9 +154,9 @@ class MusicBrowserActivity : AppCompatActivity() {
 
     private fun buildTrackItem(track: MusicTrack): android.view.View {
         val (badgeText, badgeColor) = when (track.genre) {
-            ActivityClassifier.GENRE_EXERCISE -> "EXERCISE" to getColor(R.color.badge_exercise)
-            ActivityClassifier.GENRE_STRESS   -> "STRESS"   to getColor(R.color.badge_stress)
-            else                              -> "RELAX"    to getColor(R.color.badge_relax)
+            ActivityClassifier.GENRE_HIGH_ACTIVITY -> "AKTIVITAS TINGGI" to getColor(R.color.badge_exercise)
+            ActivityClassifier.GENRE_LOW_ACTIVITY  -> "FOKUS" to getColor(R.color.badge_low_activity)
+            else                                    -> "SANTAI" to getColor(R.color.badge_relax)
         }
 
         val card = CardView(this).apply {

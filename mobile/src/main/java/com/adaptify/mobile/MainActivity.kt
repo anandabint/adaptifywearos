@@ -74,7 +74,6 @@ class MainActivity : AppCompatActivity() {
             if (intent?.action != AdaptifyMobileReceiver.ACTION_DATA_UPDATED) return
             val hr = intent.getIntExtra(AdaptifyMobileReceiver.EXTRA_HEART_RATE, 0)
             val steps = intent.getIntExtra(AdaptifyMobileReceiver.EXTRA_STEPS, 0)
-            val rmssd = intent.getDoubleExtra(AdaptifyMobileReceiver.EXTRA_RMSSD, 0.0)
             val mode = intent.getStringExtra(AdaptifyMobileReceiver.EXTRA_ACTIVITY_MODE) ?: ""
             val genre = intent.getStringExtra(AdaptifyMobileReceiver.EXTRA_GENRE) ?: ""
             val battery = intent.getIntExtra(AdaptifyMobileReceiver.EXTRA_BATTERY_LEVEL, -1)
@@ -84,7 +83,7 @@ class MainActivity : AppCompatActivity() {
             watchMonitoring.set(monitoring)
             watchBatteryLevel.set(battery.toLong())
 
-            updateSensorUI(hr, steps, rmssd, mode, genre)
+            updateSensorUI(hr, steps, mode, genre)
             updateBatteryUI(battery)
             refreshConnectionStatus()
 
@@ -149,7 +148,7 @@ class MainActivity : AppCompatActivity() {
             lastDataTime.set(snap.updatedAtEpochMillis)
             watchMonitoring.set(snap.monitoring)
             watchBatteryLevel.set(snap.batteryLevel.toLong())
-            updateSensorUI(snap.heartRate, snap.steps, snap.rmssd, snap.mode, snap.genre)
+            updateSensorUI(snap.heartRate, snap.steps, snap.mode, snap.genre)
             updateBatteryUI(snap.batteryLevel)
         }
         refreshConnectionStatus()
@@ -225,18 +224,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateSensorUI(
-        hr: Int, steps: Int, rmssd: Double, mode: String, genre: String
+        hr: Int, steps: Int, mode: String, genre: String
     ) {
         binding.tvHeartRate.text = hr?.toString() ?: "--"
         binding.tvSteps.text = "Steps (session): $steps"
-        binding.tvRmssd.text = "HRV (RMSSD): ${"%.1f".format(rmssd)} ms"
 
         // Mode badge with emoji + color per activity mode
         val (modeText, modeColor) = when {
-            mode.contains("EXERCISE", ignoreCase = true) ->
+            mode.contains("HIGH_ACTIVITY", ignoreCase = true) ->
                 "🏃 ${mode.uppercase()}" to ContextCompat.getColor(this, R.color.mode_exercise)
-            mode.contains("STRESS", ignoreCase = true) ->
-                "😰 ${mode.uppercase()}" to ContextCompat.getColor(this, R.color.mode_stress)
+            mode.contains("LOW_ACTIVITY", ignoreCase = true) ->
+                "🚶 ${mode.uppercase()}" to ContextCompat.getColor(this, R.color.mode_low_activity)
             mode.contains("RELAX", ignoreCase = true) ->
                 "😌 ${mode.uppercase()}" to ContextCompat.getColor(this, R.color.mode_relax)
             else ->
@@ -246,15 +244,15 @@ class MainActivity : AppCompatActivity() {
         binding.tvActivityMode.setTextColor(modeColor)
 
         binding.tvModeLabel.text = when {
-            mode.contains("EXERCISE", ignoreCase = true) -> "EXERCISE"
-            mode.contains("STRESS", ignoreCase = true)   -> "STRESS"
-            else                                          -> "RELAX"
+            mode.contains("HIGH_ACTIVITY", ignoreCase = true) -> "AKTIVITAS TINGGI"
+            mode.contains("LOW_ACTIVITY", ignoreCase = true)  -> "AKTIVITAS RINGAN"
+            else                                               -> "SANTAI"
         }
 
         binding.tvBodyStatus.text = when {
-            mode.contains("EXERCISE", ignoreCase = true) -> "Tubuh Anda sedang aktif berolahraga."
-            mode.contains("STRESS", ignoreCase = true)   -> "Tubuh Anda terdeteksi dalam kondisi stres."
-            else                                          -> "Tubuh Anda dalam keadaan santai & rileks."
+            mode.contains("HIGH_ACTIVITY", ignoreCase = true) -> "Tubuh Anda sedang aktif berolahraga."
+            mode.contains("LOW_ACTIVITY", ignoreCase = true)  -> "Tubuh Anda sedang beraktivitas ringan."
+            else                                               -> "Tubuh Anda dalam keadaan santai & rileks."
         }
 
         binding.tvGenre.text = "Genre: ${genre.ifEmpty { "--" }}"

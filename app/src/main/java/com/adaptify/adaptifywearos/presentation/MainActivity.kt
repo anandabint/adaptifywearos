@@ -40,17 +40,17 @@ import androidx.wear.compose.material3.SwitchButton
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.ui.tooling.preview.WearPreviewDevices
 import androidx.wear.compose.ui.tooling.preview.WearPreviewFontScales
+import com.adaptify.adaptifywearos.classifier.ActivityMode
+import com.adaptify.adaptifywearos.classifier.ActivityReading
 import com.adaptify.adaptifywearos.health.HeartRateManager
 import com.adaptify.adaptifywearos.health.HeartRateState
 import com.adaptify.adaptifywearos.presentation.theme.AdaptifyWearOsTheme
 import com.adaptify.adaptifywearos.sensor.SensorSnapshot
 import com.adaptify.adaptifywearos.sensor.Vector3Sample
-import com.adaptify.adaptifywearos.stress.StressReading
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlin.math.abs
 
 class MainActivity : ComponentActivity() {
 
@@ -107,14 +107,14 @@ class MainActivity : ComponentActivity() {
             combine(
                 AdaptifyMonitorRepository.sensorSnapshot,
                 AdaptifyMonitorRepository.heartRateState,
-                AdaptifyMonitorRepository.stressReading,
+                AdaptifyMonitorRepository.activityReading,
                 AdaptifyMonitorRepository.serviceRunning,
                 permissionState,
-            ) { sensorSnapshot, heartRateState, stressReading, serviceRunning, permissions ->
+            ) { sensorSnapshot, heartRateState, activityReading, serviceRunning, permissions ->
                 DashboardUiState(
                     sensorSnapshot = sensorSnapshot,
                     heartRateState = heartRateState,
-                    stressReading = stressReading,
+                    activityReading = activityReading,
                     permissionState = permissions,
                     monitoringEnabled = loadMonitoringEnabled(),
                     serviceRunning = serviceRunning,
@@ -204,7 +204,7 @@ data class PermissionState(
 data class DashboardUiState(
     val sensorSnapshot: SensorSnapshot = SensorSnapshot(),
     val heartRateState: HeartRateState = HeartRateState(),
-    val stressReading: StressReading = StressReading(),
+    val activityReading: ActivityReading? = null,
     val permissionState: PermissionState = PermissionState(),
     val monitoringEnabled: Boolean = true,
     val serviceRunning: Boolean = false,
@@ -284,10 +284,7 @@ private fun WearDashboard(
                     }
 
                     item {
-                        StressCard(
-                            stressReading = state.stressReading,
-                            currentHeartRate = state.heartRateState.bpm,
-                        )
+                        ActivityModeCard(activityReading = state.activityReading)
                     }
                 } else {
                     item { MonitoringPausedCard() }
@@ -474,60 +471,49 @@ private fun VectorCard(
 }
 
 @Composable
-private fun StressCard(
-    stressReading: StressReading,
-    currentHeartRate: Int?,
-) {
-    val stressColor = when (stressReading.level) {
-        "High" -> MaterialTheme.colorScheme.errorContainer
-        "Elevated" -> MaterialTheme.colorScheme.tertiaryContainer
-        "Moderate" -> MaterialTheme.colorScheme.secondaryContainer
-        else -> MaterialTheme.colorScheme.primaryContainer
-    }
-
-    val stressContentColor = when (stressReading.level) {
-        "High" -> MaterialTheme.colorScheme.onErrorContainer
-        "Elevated" -> MaterialTheme.colorScheme.onTertiaryContainer
-        "Moderate" -> MaterialTheme.colorScheme.onSecondaryContainer
-        else -> MaterialTheme.colorScheme.onPrimaryContainer
+private fun ActivityModeCard(activityReading: ActivityReading?) {
+    val mode = activityReading?.mode
+    val (containerColor, contentColor, label) = when (mode) {
+        ActivityMode.HIGH_ACTIVITY -> Triple(
+            MaterialTheme.colorScheme.errorContainer,
+            MaterialTheme.colorScheme.onErrorContainer,
+            "High Activity",
+        )
+        ActivityMode.LOW_ACTIVITY -> Triple(
+            MaterialTheme.colorScheme.tertiaryContainer,
+            MaterialTheme.colorScheme.onTertiaryContainer,
+            "Low Activity",
+        )
+        ActivityMode.RELAX -> Triple(
+            MaterialTheme.colorScheme.primaryContainer,
+            MaterialTheme.colorScheme.onPrimaryContainer,
+            "Relax",
+        )
+        null -> Triple(
+            MaterialTheme.colorScheme.surfaceContainer,
+            MaterialTheme.colorScheme.onSurface,
+            "—",
+        )
     }
 
     SurfaceCard(
-        containerColor = stressColor,
-        contentColor = stressContentColor,
+        containerColor = containerColor,
+        contentColor = contentColor,
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = "Stress Index",
+                text = "Activity Mode",
                 style = MaterialTheme.typography.labelMedium,
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = stressReading.index.toString(),
-                    style = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    text = stressReading.level,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
             Text(
-                text = when {
-                    !stressReading.baselineReady -> "Warming up baseline from heart-rate samples"
-                    stressReading.baselineHeartRate != null -> {
-                        val delta = currentHeartRate?.minus(stressReading.baselineHeartRate) ?: 0
-                        "Baseline ${stressReading.baselineHeartRate} bpm, delta ${abs(delta)} bpm"
-                    }
-                    else -> "Waiting for heart-rate data"
-                },
+                text = label,
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = activityReading?.reason ?: "Waiting for sensor data",
                 style = MaterialTheme.typography.bodySmall,
             )
         }
@@ -629,11 +615,10 @@ private fun DefaultPreview() {
                     availabilityLabel = "Live",
                     lastUpdatedEpochMillis = System.currentTimeMillis(),
                 ),
-                stressReading = StressReading(
-                    index = 36,
-                    level = "Moderate",
-                    baselineHeartRate = 72,
-                    baselineReady = true,
+                activityReading = ActivityReading(
+                    mode = ActivityMode.LOW_ACTIVITY,
+                    confidence = 0.7f,
+                    reason = "LOW_ACTIVITY: HR=82bpm steps=45/min",
                 ),
                 permissionState = PermissionState(
                     activityRecognitionGranted = true,

@@ -9,7 +9,6 @@ data class AdaptifyRealtimeSnapshot(
     val mode: String,
     val genre: String,
     val updatedAtEpochMillis: Long,
-    val rmssd: Double = 0.0,
     val batteryLevel: Int = -1,
     val monitoring: Boolean = true,
 )
@@ -21,7 +20,6 @@ object AdaptifyRealtimeStore {
     private const val KEY_MODE = "mode"
     private const val KEY_GENRE = "genre"
     private const val KEY_UPDATED_AT = "updatedAt"
-    private const val KEY_RMSSD = "rmssd"
     private const val KEY_BATTERY_LEVEL = "batteryLevel"
     private const val KEY_MONITORING = "monitoring"
 
@@ -33,7 +31,6 @@ object AdaptifyRealtimeStore {
             .putString(KEY_MODE, snapshot.mode)
             .putString(KEY_GENRE, snapshot.genre)
             .putLong(KEY_UPDATED_AT, snapshot.updatedAtEpochMillis)
-            .putFloat(KEY_RMSSD, snapshot.rmssd.toFloat())
             .putInt(KEY_BATTERY_LEVEL, snapshot.batteryLevel)
             .putBoolean(KEY_MONITORING, snapshot.monitoring)
             .apply()
@@ -49,7 +46,6 @@ object AdaptifyRealtimeStore {
             mode = preferences.getString(KEY_MODE, "").orEmpty(),
             genre = preferences.getString(KEY_GENRE, "").orEmpty(),
             updatedAtEpochMillis = preferences.getLong(KEY_UPDATED_AT, 0L),
-            rmssd = preferences.getFloat(KEY_RMSSD, 0f).toDouble(),
             batteryLevel = preferences.getInt(KEY_BATTERY_LEVEL, -1),
             monitoring = preferences.getBoolean(KEY_MONITORING, true),
         )
@@ -60,7 +56,6 @@ object AdaptifyRealtimeStore {
             setPackage(packageName)
             putExtra(AdaptifyMobileReceiver.EXTRA_HEART_RATE, snapshot.heartRate)
             putExtra(AdaptifyMobileReceiver.EXTRA_STEPS, snapshot.steps)
-            putExtra(AdaptifyMobileReceiver.EXTRA_RMSSD, snapshot.rmssd)
             putExtra(AdaptifyMobileReceiver.EXTRA_ACTIVITY_MODE, snapshot.mode)
             putExtra(AdaptifyMobileReceiver.EXTRA_GENRE, snapshot.genre)
             putExtra(AdaptifyMobileReceiver.EXTRA_UPDATED_AT, snapshot.updatedAtEpochMillis)

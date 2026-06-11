@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [SensorLog::class], version = 1)
+@Database(entities = [SensorLog::class], version = 2)
 abstract class AdaptifyDatabase : RoomDatabase() {
 
     abstract fun sensorLogDao(): SensorLogDao
@@ -19,7 +19,9 @@ abstract class AdaptifyDatabase : RoomDatabase() {
                     context.applicationContext,
                     AdaptifyDatabase::class.java,
                     "adaptify_db",
-                ).build().also { INSTANCE = it }
+                )
+                    .fallbackToDestructiveMigration()
+                    .build().also { INSTANCE = it }
             }
     }
 }

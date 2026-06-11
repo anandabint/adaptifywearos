@@ -42,22 +42,24 @@ object MusicRepository {
     }
 
     /**
-     * Migrate tracks from old 6-genre system to new 3-genre system.
+     * Migrate tracks from old genre systems to current 3-genre system.
      * Safe to call multiple times (idempotent).
      * Old genre → New genre mapping:
-     *   EDM / Upbeat, Pop / Energetic  → Exercise Music  (EXERCISE)
-     *   Lo-fi / Calming, Ambient / Soft → Stress Relief  (STRESS)
-     *   Jazz / Acoustic, Classical / Sleep → Relax Music (RELAX)
+     *   EDM / Upbeat, Pop / Energetic     → Exercise Music (HIGH_ACTIVITY)
+     *   Lo-fi / Calming, Ambient / Soft,
+     *   Stress Relief                     → Focus Music    (LOW_ACTIVITY)
+     *   Jazz / Acoustic, Classical / Sleep → Relax Music   (RELAX)
      */
     fun migrateGenres(context: Context) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        if (prefs.getBoolean("genre_migrated_v2", false)) return  // already done
+        if (prefs.getBoolean("genre_migrated_v3", false)) return  // already done
 
         val oldToNew = mapOf(
-            "EDM / Upbeat"       to ActivityClassifier.GENRE_EXERCISE,
-            "Pop / Energetic"    to ActivityClassifier.GENRE_EXERCISE,
-            "Lo-fi / Calming"    to ActivityClassifier.GENRE_STRESS,
-            "Ambient / Soft"     to ActivityClassifier.GENRE_STRESS,
+            "EDM / Upbeat"       to ActivityClassifier.GENRE_HIGH_ACTIVITY,
+            "Pop / Energetic"    to ActivityClassifier.GENRE_HIGH_ACTIVITY,
+            "Lo-fi / Calming"    to ActivityClassifier.GENRE_LOW_ACTIVITY,
+            "Ambient / Soft"     to ActivityClassifier.GENRE_LOW_ACTIVITY,
+            "Stress Relief"      to ActivityClassifier.GENRE_LOW_ACTIVITY,
             "Jazz / Acoustic"    to ActivityClassifier.GENRE_RELAX,
             "Classical / Sleep"  to ActivityClassifier.GENRE_RELAX,
         )
@@ -67,7 +69,7 @@ object MusicRepository {
             if (newGenre != null) track.copy(genre = newGenre) else track
         }
         saveTracks(context, migrated)
-        prefs.edit().putBoolean("genre_migrated_v2", true).apply()
+        prefs.edit().putBoolean("genre_migrated_v3", true).apply()
     }
 
     private fun saveTracks(context: Context, tracks: List<MusicTrack>) {

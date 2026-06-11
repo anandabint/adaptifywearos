@@ -3,7 +3,6 @@ package com.adaptify.adaptifywearos.presentation
 import com.adaptify.adaptifywearos.classifier.ActivityReading
 import com.adaptify.adaptifywearos.health.HeartRateState
 import com.adaptify.adaptifywearos.sensor.SensorSnapshot
-import com.adaptify.adaptifywearos.stress.StressReading
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,9 +20,6 @@ object AdaptifyMonitorRepository {
     private val _heartRateState = MutableStateFlow(HeartRateState())
     val heartRateState: StateFlow<HeartRateState> = _heartRateState.asStateFlow()
 
-    private val _stressReading = MutableStateFlow(StressReading())
-    val stressReading: StateFlow<StressReading> = _stressReading.asStateFlow()
-
     private val _activityReading = MutableStateFlow<ActivityReading?>(null)
     val activityReading: StateFlow<ActivityReading?> = _activityReading.asStateFlow()
 
@@ -33,12 +29,10 @@ object AdaptifyMonitorRepository {
     fun publish(
         sensor: SensorSnapshot,
         heartRate: HeartRateState,
-        stress: StressReading,
         activity: ActivityReading,
     ) {
         _sensorSnapshot.value = sensor
         _heartRateState.value = heartRate
-        _stressReading.value = stress
         _activityReading.value = activity
     }
 
@@ -49,7 +43,6 @@ object AdaptifyMonitorRepository {
     fun reset() {
         _sensorSnapshot.value = SensorSnapshot()
         _heartRateState.value = HeartRateState()
-        _stressReading.value = StressReading()
         _activityReading.value = null
     }
 }

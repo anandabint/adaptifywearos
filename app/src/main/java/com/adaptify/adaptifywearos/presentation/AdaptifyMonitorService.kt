@@ -19,7 +19,6 @@ import com.adaptify.adaptifywearos.database.AdaptifyDatabase
 import com.adaptify.adaptifywearos.database.SensorLog
 import com.adaptify.adaptifywearos.health.HeartRateManager
 import com.adaptify.adaptifywearos.sensor.SensorHandler
-import com.adaptify.adaptifywearos.stress.StressCalculator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -59,7 +58,6 @@ class AdaptifyMonitorService : Service() {
     private val heartRateManager by lazy { HeartRateManager(applicationContext) }
     private val realtimeSender by lazy { AdaptifyRealtimeSender(applicationContext) }
     private val database by lazy { AdaptifyDatabase.getInstance(applicationContext) }
-    private val stressCalculator = StressCalculator()
     private val activityClassifier = ActivityClassifier()
 
     private var wakeLock: PowerManager.WakeLock? = null
@@ -116,21 +114,14 @@ class AdaptifyMonitorService : Service() {
             ) { sensorSnapshot, heartRateState -> sensorSnapshot to heartRateState }
                 .collect { (sensorSnapshot, heartRateState) ->
                     try {
-                        val stressReading = stressCalculator.calculate(
-                            currentHeartRate = heartRateState.bpm,
-                            heartRateTimestamp = heartRateState.lastUpdatedEpochMillis,
-                            accelerometerDelta = sensorSnapshot.accelerometerDelta,
-                        )
                         val activityReading = activityClassifier.classify(
                             sensorSnapshot = sensorSnapshot,
                             heartRateState = heartRateState,
-                            stressReading = stressReading,
                         )
 
                         AdaptifyMonitorRepository.publish(
                             sensor = sensorSnapshot,
                             heartRate = heartRateState,
-                            stress = stressReading,
                             activity = activityReading,
                         )
 
@@ -139,8 +130,6 @@ class AdaptifyMonitorService : Service() {
                             steps = sensorSnapshot.steps ?: 0,
                             activityMode = activityReading.mode.name,
                             activityConfidence = activityReading.confidence,
-                            rmssd = stressReading.rmssd,
-                            sdhr = stressReading.sdhr,
                             monitoring = true,
                         )
                         realtimeSender.send(payload)
@@ -157,8 +146,6 @@ class AdaptifyMonitorService : Service() {
                                         timestamp = System.currentTimeMillis(),
                                         heartRate = heartRateState.bpm ?: 0,
                                         steps = sensorSnapshot.steps ?: 0,
-                                        stressIndex = stressReading.index,
-                                        rmssd = stressReading.rmssd.toFloat(),
                                         accelerometerMagnitude = accelMag,
                                         gyroscopeMagnitude = gyroMag,
                                         activityMode = activityReading.mode.name,
@@ -218,7 +205,6 @@ class AdaptifyMonitorService : Service() {
         try {
             val lastSensor = AdaptifyMonitorRepository.sensorSnapshot.value
             val lastHr = AdaptifyMonitorRepository.heartRateState.value
-            val lastStress = AdaptifyMonitorRepository.stressReading.value
             val lastActivity = AdaptifyMonitorRepository.activityReading.value
             realtimeSender.send(
                 AdaptifyRealtimePayload(
@@ -226,7 +212,6 @@ class AdaptifyMonitorService : Service() {
                     steps = lastSensor.steps ?: 0,
                     activityMode = lastActivity?.mode?.name ?: "RELAX",
                     activityConfidence = lastActivity?.confidence ?: 0f,
-                    rmssd = lastStress.rmssd,
                     monitoring = false,
                 )
             )
