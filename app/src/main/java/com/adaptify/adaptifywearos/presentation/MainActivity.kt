@@ -477,17 +477,17 @@ private fun ActivityModeCard(activityReading: ActivityReading?) {
         ActivityMode.HIGH_ACTIVITY -> Triple(
             MaterialTheme.colorScheme.errorContainer,
             MaterialTheme.colorScheme.onErrorContainer,
-            "High Activity",
+            "Aktivitas Tinggi",
         )
         ActivityMode.LOW_ACTIVITY -> Triple(
             MaterialTheme.colorScheme.tertiaryContainer,
             MaterialTheme.colorScheme.onTertiaryContainer,
-            "Low Activity",
+            "Aktivitas Ringan",
         )
         ActivityMode.RELAX -> Triple(
             MaterialTheme.colorScheme.primaryContainer,
             MaterialTheme.colorScheme.onPrimaryContainer,
-            "Relax",
+            "Santai",
         )
         null -> Triple(
             MaterialTheme.colorScheme.surfaceContainer,

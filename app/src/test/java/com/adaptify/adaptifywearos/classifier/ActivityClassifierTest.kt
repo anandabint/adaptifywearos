@@ -18,6 +18,11 @@ class ActivityClassifierTest {
 
     @Test
     fun `high activity - high HR and high step count returns HIGH_ACTIVITY`() {
+        // HIGH_ACTIVITY entry is debounced: requires 3 consecutive AND-condition matches.
+        classifier.resetDebounceState()
+        repeat(2) {
+            classifier.classifyInternal(120, 120, 10f, 0.5f)
+        }
         val result = classifier.classifyInternal(
             heartRateBpm = 120,
             stepsPerMinute = 120,
@@ -28,26 +33,31 @@ class ActivityClassifierTest {
     }
 
     @Test
-    fun `high activity - high HR and accel above 1_5g returns HIGH_ACTIVITY`() {
-        // 26 m/s² > 24.53 (1.5g net + 1g gravity) threshold
+    fun `high activity - high HR and accel above 1_5g but low steps returns RELAX`() {
+        // AND logic: accel above 24.53 m/s² (1.5g net + 1g gravity) no longer promotes to
+        // HIGH_ACTIVITY on its own. HIGH_ACTIVITY now requires HR>100 AND steps>=100/min.
+        // steps=20 is sedentary (<30/min), so the result falls through to RELAX.
         val result = classifier.classifyInternal(
             heartRateBpm = 110,
             stepsPerMinute = 20,
             accelMagnitudeMs2 = 26f,
             gyroMagnitudeRads = 0.2f,
         )
-        assertEquals(ActivityMode.HIGH_ACTIVITY, result.mode)
+        assertEquals(ActivityMode.RELAX, result.mode)
     }
 
     @Test
-    fun `high activity - high HR and gyro above 2 rad_s returns HIGH_ACTIVITY`() {
+    fun `high activity - high HR and gyro above 2 rad_s but low steps returns RELAX`() {
+        // AND logic: gyro above 2 rad/s no longer promotes to HIGH_ACTIVITY on its own.
+        // HIGH_ACTIVITY now requires HR>100 AND steps>=100/min. steps=20 is sedentary
+        // (<30/min), so the result is RELAX.
         val result = classifier.classifyInternal(
             heartRateBpm = 105,
             stepsPerMinute = 20,
             accelMagnitudeMs2 = 10f,
             gyroMagnitudeRads = 3.0f,
         )
-        assertEquals(ActivityMode.HIGH_ACTIVITY, result.mode)
+        assertEquals(ActivityMode.RELAX, result.mode)
     }
 
     @Test
@@ -64,6 +74,11 @@ class ActivityClassifierTest {
 
     @Test
     fun `high activity - HR just above 100 BPM with 100 steps_min returns HIGH_ACTIVITY`() {
+        // HIGH_ACTIVITY entry is debounced: requires 3 consecutive AND-condition matches.
+        classifier.resetDebounceState()
+        repeat(2) {
+            classifier.classifyInternal(101, 100, 8f, 0.3f)
+        }
         val result = classifier.classifyInternal(
             heartRateBpm = 101,
             stepsPerMinute = 100,
@@ -200,6 +215,9 @@ class ActivityClassifierTest {
 
     @Test
     fun `reason - contains the mode name as prefix`() {
+        // HIGH_ACTIVITY entry is debounced: requires 3 consecutive AND-condition matches.
+        classifier.resetDebounceState()
+        repeat(2) { classifier.classifyInternal(120, 120, 20f, 2f) }
         val highActivity = classifier.classifyInternal(120, 120, 20f, 2f)
         val lowActivity = classifier.classifyInternal(85, 50, 3f, 0.3f)
         val relax = classifier.classifyInternal(60, 5, 1f, 0.05f)
@@ -207,5 +225,54 @@ class ActivityClassifierTest {
         assertTrue("Expected HIGH_ACTIVITY in reason", highActivity.reason.startsWith("HIGH_ACTIVITY"))
         assertTrue("Expected LOW_ACTIVITY in reason", lowActivity.reason.startsWith("LOW_ACTIVITY"))
         assertTrue("Expected RELAX in reason", relax.reason.startsWith("RELAX"))
+    }
+
+    // --- HIGH_ACTIVITY entry debounce ---
+
+    @Test
+    fun `debounce - single reading meeting AND condition returns LOW_ACTIVITY not HIGH_ACTIVITY`() {
+        classifier.resetDebounceState()
+        val result = classifier.classifyInternal(
+            heartRateBpm = 105,
+            stepsPerMinute = 105,
+            accelMagnitudeMs2 = 10f,
+            gyroMagnitudeRads = 0.5f,
+        )
+        assertEquals(ActivityMode.LOW_ACTIVITY, result.mode)
+    }
+
+    @Test
+    fun `debounce - three consecutive readings meeting AND condition returns HIGH_ACTIVITY`() {
+        classifier.resetDebounceState()
+        repeat(2) {
+            classifier.classifyInternal(105, 105, 10f, 0.5f)
+        }
+        val result = classifier.classifyInternal(105, 105, 10f, 0.5f)
+        assertEquals(ActivityMode.HIGH_ACTIVITY, result.mode)
+    }
+
+    @Test
+    fun `debounce - exiting HIGH_ACTIVITY is instant, no debounce on exit`() {
+        classifier.resetDebounceState()
+        repeat(3) {
+            classifier.classifyInternal(105, 105, 10f, 0.5f)
+        }
+        // Now drop steps below threshold — should immediately leave HIGH_ACTIVITY
+        val result = classifier.classifyInternal(105, 50, 10f, 0.5f)
+        assertEquals(ActivityMode.LOW_ACTIVITY, result.mode)
+    }
+
+    @Test
+    fun `debounce - brief single-reading spike during sustained walking does not trigger HIGH_ACTIVITY`() {
+        classifier.resetDebounceState()
+        // Sustained walking: steps in light range, HR fluctuating around 100
+        classifier.classifyInternal(96, 50, 5f, 0.3f)
+        classifier.classifyInternal(98, 50, 5f, 0.3f)
+        // Single transient spike: HR briefly >100 AND steps briefly >=100 (1 reading only)
+        val spikeResult = classifier.classifyInternal(105, 102, 5f, 0.3f)
+        assertEquals(ActivityMode.LOW_ACTIVITY, spikeResult.mode)
+        // Returns to normal walking — consecutive count resets
+        val afterResult = classifier.classifyInternal(96, 50, 5f, 0.3f)
+        assertEquals(ActivityMode.LOW_ACTIVITY, afterResult.mode)
     }
 }

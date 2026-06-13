@@ -49,10 +49,10 @@ class AdaptifyMobileReceiver : WearableListenerService() {
                 return
             }
 
-            // Use watch-side classification (has full sensor context: RMSSD + SDHR + steps + accel)
-            // Phone-side reclassification would lose SDHR and other signals.
+            // Use watch-side classification (has full sensor context: HR + steps + accel + gyro)
+            // Phone-side reclassification would lose accelerometer/gyroscope signals.
             // Jika watch tidak mengirim activityMode, data tidak cukup lengkap untuk keputusan
-            // valid (SDHR dan accel tidak tersedia di sisi HP). Default RELAX adalah pilihan aman.
+            // valid (accel/gyro tidak tersedia di sisi HP). Default RELAX adalah pilihan aman.
             val mode = activityMode.ifEmpty { "RELAX" }
             val genre = ActivityClassifier.getMusicGenre(mode)
 

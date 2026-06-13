@@ -39,11 +39,22 @@ class ActivityClassifier {
 
         private const val GRAVITY_MS2 = 9.81f
         private const val STEP_RATE_INTERVAL_MS = 3_000L
+
+        // Debounce for HIGH_ACTIVITY entry — requires N consecutive readings meeting the
+        // AND condition (HR>100 AND steps>=100/min) before switching to HIGH_ACTIVITY.
+        // This is a design decision to filter transient HR noise (instant HR readings can
+        // fluctuate ±3-5bpm around the threshold during sustained walking, causing brief
+        // false-positive AND-condition matches). Exiting HIGH_ACTIVITY remains instant.
+        private const val HIGH_ACTIVITY_DEBOUNCE_COUNT = 3
     }
 
     private var lastStepCount: Int? = null
     private var lastStepTimestampMs: Long = 0L
     private var smoothedStepsPerMin: Float = 0f
+
+    // Consecutive count of readings meeting the HIGH_ACTIVITY AND condition.
+    // Resets to 0 whenever the condition is not met. See HIGH_ACTIVITY_DEBOUNCE_COUNT.
+    private var highActivityConsecutiveCount = 0
 
     // Mode stability buffer — mode must be consistent for MIN_STABLE_MS
     // before it is reported. Prevents single-sample spikes from changing mode.
@@ -91,27 +102,42 @@ class ActivityClassifier {
         stepsPerMinute: Int,
         accelMagnitudeMs2: Float?,
         gyroMagnitudeRads: Float?,
-    ): ActivityReading = when {
-        isHighActivity(heartRateBpm, stepsPerMinute, accelMagnitudeMs2, gyroMagnitudeRads) ->
-            buildHighActivity(heartRateBpm, stepsPerMinute, accelMagnitudeMs2, gyroMagnitudeRads)
-        isLowActivity(stepsPerMinute) ->
-            buildLowActivity(heartRateBpm, stepsPerMinute)
-        else ->
-            buildRelax(heartRateBpm, stepsPerMinute)
+    ): ActivityReading {
+        val highActivityConditionMet =
+            isHighActivity(heartRateBpm, stepsPerMinute, accelMagnitudeMs2, gyroMagnitudeRads)
+
+        if (highActivityConditionMet) {
+            highActivityConsecutiveCount++
+        } else {
+            highActivityConsecutiveCount = 0
+        }
+
+        return when {
+            highActivityConditionMet && highActivityConsecutiveCount >= HIGH_ACTIVITY_DEBOUNCE_COUNT ->
+                buildHighActivity(heartRateBpm, stepsPerMinute, accelMagnitudeMs2, gyroMagnitudeRads)
+            // During the debounce period (count 1-2) the AND condition is met but not yet
+            // confirmed; report LOW_ACTIVITY rather than RELAX for a smoother transition
+            // (steps>=100 never matches isLowActivity's 30-until-100 range otherwise).
+            isLowActivity(stepsPerMinute) || highActivityConditionMet ->
+                buildLowActivity(heartRateBpm, stepsPerMinute)
+            else ->
+                buildRelax(heartRateBpm, stepsPerMinute)
+        }
     }
 
-    // HIGH_ACTIVITY requires elevated HR *with* at least one physical movement signal.
-    // Rationale:
-    //   HR >100 BPM alone can result from anxiety or autonomic response while sedentary.
-    //   Ho et al. (2022) measured HR during physical activity — movement is an implicit context.
-    //   Tudor-Locke et al. (2011) explicitly uses step cadence ≥100/min as the MVPA marker.
-    //   Therefore: HR elevation is necessary but not sufficient without corroborating movement.
+    /** Resets internal debounce state. For use in unit tests between scenarios. */
+    fun resetDebounceState() {
+        highActivityConsecutiveCount = 0
+    }
+
+    // HIGH_ACTIVITY requires BOTH high cadence (Tudor-Locke et al., 2011 — MVPA threshold
+    // >=100 steps/min) AND elevated heart rate (Ho et al., 2022 — HR>100bpm as exercise
+    // intensity proxy). Combining both signals is a design decision to reduce false
+    // positives from HR alone (e.g. HR rising during sustained light walking) — consistent
+    // with multi-sensor fusion approaches shown to improve high-intensity classification
+    // accuracy (Mehrang et al.).
     private fun isHighActivity(hr: Int?, steps: Int, accel: Float?, gyro: Float?): Boolean {
-        if (hr == null || hr <= HR_EXERCISE_MIN) return false
-        // HR > 100 confirmed — now require at least one movement signal
-        return steps >= STEPS_EXERCISE_MIN_PER_MIN
-            || (accel != null && accel > ACCEL_EXERCISE_MS2)
-            || (gyro != null && gyro > GYRO_EXERCISE_RADS)
+        return hr != null && hr > HR_EXERCISE_MIN && steps >= STEPS_EXERCISE_MIN_PER_MIN
     }
 
     private fun buildHighActivity(

@@ -118,6 +118,7 @@ class MainActivity : AppCompatActivity() {
         window.navigationBarColor = android.graphics.Color.TRANSPARENT
         WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = false
 
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         MusicRepository.migrateGenres(this)
         setContentView(binding.root)
@@ -232,13 +233,13 @@ class MainActivity : AppCompatActivity() {
         // Mode badge with emoji + color per activity mode
         val (modeText, modeColor) = when {
             mode.contains("HIGH_ACTIVITY", ignoreCase = true) ->
-                "🏃 ${mode.uppercase()}" to ContextCompat.getColor(this, R.color.mode_exercise)
+                "AKTIVITAS TINGGI" to ContextCompat.getColor(this, R.color.mode_exercise)
             mode.contains("LOW_ACTIVITY", ignoreCase = true) ->
-                "🚶 ${mode.uppercase()}" to ContextCompat.getColor(this, R.color.mode_low_activity)
+                "AKTIVITAS RINGAN" to ContextCompat.getColor(this, R.color.mode_low_activity)
             mode.contains("RELAX", ignoreCase = true) ->
-                "😌 ${mode.uppercase()}" to ContextCompat.getColor(this, R.color.mode_relax)
+                "SANTAI" to ContextCompat.getColor(this, R.color.mode_relax)
             else ->
-                mode.ifEmpty { "--" } to ContextCompat.getColor(this, R.color.mode_relax)
+                "--" to ContextCompat.getColor(this, R.color.mode_relax)
         }
         binding.tvActivityMode.text = modeText
         binding.tvActivityMode.setTextColor(modeColor)

@@ -17,7 +17,7 @@ object ActivityClassifier {
 
     // Genre names — must match exactly with MusicPickerActivity.GENRE_SECTIONS
     const val GENRE_HIGH_ACTIVITY = "Exercise Music"
-    const val GENRE_LOW_ACTIVITY  = "Focus Music"
+    const val GENRE_LOW_ACTIVITY  = "Light Activity Music"
     const val GENRE_RELAX         = "Relax Music"
 
     fun getMusicGenre(mode: String): String = when (mode) {
