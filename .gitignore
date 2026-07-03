@@ -12,4 +12,6 @@
 /captures
 .externalNativeBuild
 .cxx
+.kotlin/
+.claude/
 local.properties
