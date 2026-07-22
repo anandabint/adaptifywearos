@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kebijakan Privasi - Adaptify</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+    line-height: 1.6;
+    color: #1a1a1a;
+  }
+  h1 { font-size: 1.8em; margin-bottom: 0.2em; }
+  h2 { font-size: 1.25em; margin-top: 1.8em; border-bottom: 1px solid #ddd; padding-bottom: 0.3em; }
+  .updated { color: #666; font-size: 0.9em; margin-bottom: 2em; }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+  th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { background: #f5f5f5; }
+  code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 0.9em; }
+  ul { padding-left: 1.4em; }
+</style>
+</head>
+<body>
+
+<h1>Kebijakan Privasi Adaptify</h1>
+<p class="updated">Terakhir diperbarui: 22 Juli 2026</p>
+
+<p>
+Adaptify ("Aplikasi") adalah aplikasi pendamping (companion app) untuk smartwatch Xiaomi Watch 2 yang
+merekomendasikan genre musik berdasarkan data aktivitas dan detak jantung pengguna secara real-time.
+Kebijakan Privasi ini menjelaskan data apa saja yang dibaca oleh Aplikasi, bagaimana data tersebut
+diproses dan disimpan, serta hak pengguna terhadap data tersebut.
+</p>
+
+<h2>1. Data yang Dibaca</h2>
+<p>Aplikasi (melalui smartwatch pendamping) membaca sensor berikut dari perangkat wearable:</p>
+<ul>
+  <li><strong>Detak jantung (Heart Rate / HR)</strong> — dibaca melalui sensor sensor detak jantung pada smartwatch.</li>
+  <li><strong>Jumlah langkah (Step Count)</strong> — dibaca melalui sensor pedometer pada smartwatch.</li>
+</ul>
+<p>
+Data tambahan seperti variabilitas detak jantung (HRV/RMSSD), data akselerometer, dan giroskop juga
+dibaca oleh smartwatch untuk keperluan klasifikasi mode aktivitas (misalnya Relax, Low Activity, atau
+High Activity), namun hanya nilai turunan (indeks/skor/mode) yang dikirim ke aplikasi HP — bukan data
+mentah sensor gerak.
+</p>
+
+<h2>2. Bagaimana Data Diproses</h2>
+<p>
+Seluruh pemrosesan data dilakukan <strong>secara lokal (on-device)</strong>:
+</p>
+<ul>
+  <li>Perhitungan indeks aktivitas/HRV dilakukan langsung di smartwatch.</li>
+  <li>Klasifikasi mode aktivitas dan rekomendasi genre musik dilakukan langsung di aplikasi HP.</li>
+  <li>Tidak ada pemrosesan data yang dilakukan di server eksternal, karena Aplikasi ini <strong>tidak memiliki backend/server</strong>.</li>
+</ul>
+
+<h2>3. Bagaimana Data Disimpan</h2>
+<p>Data yang dibaca disimpan secara lokal di perangkat HP pengguna, menggunakan:</p>
+<table>
+  <tr><th>Media Penyimpanan</th><th>Jenis Data</th></tr>
+  <tr><td>Room Database (lokal, di dalam perangkat)</td><td>Riwayat/log heart rate, step count, mode aktivitas, dan riwayat rekomendasi genre musik.</td></tr>
+  <tr><td>SharedPreferences (lokal, di dalam perangkat)</td><td>Preferensi pengguna, konfigurasi aplikasi, dan pengaturan pemetaan genre musik.</td></tr>
+</table>
+<p>
+Data ini <strong>tidak pernah disimpan di luar perangkat pengguna</strong> — tidak ada database cloud,
+tidak ada penyimpanan pihak ketiga, dan tidak ada backup otomatis ke server manapun.
+</p>
+
+<h2>4. Transmisi Data</h2>
+<p>
+Data hanya berpindah dari smartwatch ke HP melalui koneksi <strong>Bluetooth lokal</strong>
+(menggunakan Wearable Data Layer API dari Google Play Services), yang berjalan sepenuhnya di antara
+kedua perangkat milik pengguna dan tidak melalui internet atau server eksternal.
+</p>
+<p>
+Aplikasi <strong>tidak mengirim data pengguna ke server, layanan cloud, atau pihak ketiga mana pun</strong>,
+termasuk tidak ada analitik pihak ketiga, iklan, atau layanan pelacakan (tracking) yang mengumpulkan data
+kesehatan pengguna.
+</p>
+
+<h2>5. Berbagi Data dengan Pihak Ketiga</h2>
+<p>
+Adaptify <strong>tidak membagikan, menjual, atau mentransfer data pengguna kepada pihak ketiga mana pun</strong>.
+</p>
+
+<h2>6. Hak Pengguna dan Penghapusan Data</h2>
+<p>
+Karena seluruh data disimpan secara lokal di perangkat pengguna, pengguna memiliki kendali penuh atas
+data tersebut:
+</p>
+<ul>
+  <li>Pengguna dapat menghapus seluruh data aplikasi kapan saja melalui pengaturan sistem (<em>Settings &gt; Apps &gt; Adaptify &gt; Clear Data</em>).</li>
+  <li>Meng-uninstall Aplikasi dari HP dan/atau smartwatch akan menghapus seluruh data secara permanen, karena tidak ada salinan data yang tersimpan di luar perangkat.</li>
+</ul>
+
+<h2>7. Data Anak-Anak</h2>
+<p>
+Aplikasi ini tidak ditujukan untuk anak-anak di bawah usia 13 tahun dan tidak secara sengaja
+mengumpulkan data dari anak-anak.
+</p>
+
+<h2>8. Perubahan Kebijakan Privasi</h2>
+<p>
+Kebijakan Privasi ini dapat diperbarui dari waktu ke waktu. Perubahan akan dipublikasikan pada halaman ini
+dengan tanggal pembaruan yang baru.
+</p>
+
+<h2>9. Kontak</h2>
+<p>
+Jika Anda memiliki pertanyaan mengenai Kebijakan Privasi ini, silakan hubungi:
+<br>
+Email: <code>anandabramadhan@gmai</code>
+</p>
+
+</body>
+</html>
