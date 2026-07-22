@@ -16,3 +16,6 @@
 .claude/
 local.properties
 /release/
+release/*.jks
+release/KEYSTORE_CREDENTIALS.txt
+release/keystore.properties
