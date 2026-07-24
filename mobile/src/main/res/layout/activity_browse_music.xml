@@ -51,16 +51,6 @@
                 android:letterSpacing="0.1"
                 android:layout_marginTop="2dp" />
         </LinearLayout>
-
-        <!-- Action Button Placeholder -->
-        <ImageButton
-            android:id="@+id/btnFilter"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@android:drawable/ic_menu_sort_by_size"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Filter"
-            android:tint="@color/accent_purple" />
     </LinearLayout>
 
     <ScrollView
