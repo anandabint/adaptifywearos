@@ -363,15 +363,15 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
+                    android:orientation="vertical">
 
-                    <!-- Adaptive Toggle -->
+                    <!-- Top Row: Adaptive Toggle -->
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:gravity="center_vertical">
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -394,41 +394,43 @@
                             android:checked="true" />
                     </LinearLayout>
 
-                    <!-- Spacer -->
-                    <View
-                        android:layout_width="0dp"
-                        android:layout_height="0dp"
-                        android:layout_weight="1" />
+                    <!-- Bottom Row: Play/Skip Buttons -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
 
-                    <!-- Play/Pause Button -->
-                    <!-- Play/Pause Button -->
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnPlayPause"
-                        style="@style/Widget.Material3.Button"
-                        android:layout_width="wrap_content"
-                        android:layout_height="40dp"
-                        android:text="PAUSE"
-                        android:textSize="11sp"
-                        android:textStyle="bold"
-                        android:textColor="#05368A"
-                        app:backgroundTint="#FFFFFF"
-                        app:cornerRadius="20dp"
-                        android:layout_marginEnd="8dp" />
+                        <!-- Play/Pause Button -->
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnPlayPause"
+                            style="@style/Widget.Material3.Button"
+                            android:layout_width="0dp"
+                            android:layout_height="40dp"
+                            android:layout_weight="1"
+                            android:text="PAUSE"
+                            android:textSize="11sp"
+                            android:textStyle="bold"
+                            android:textColor="#05368A"
+                            app:backgroundTint="#FFFFFF"
+                            app:cornerRadius="20dp"
+                            android:layout_marginEnd="8dp" />
 
-                    <!-- Skip Button -->
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnSkip"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="40dp"
-                        android:text="SKIP"
-                        android:textSize="11sp"
-                        android:textStyle="bold"
-                        android:textColor="#FFFFFF"
-                        app:strokeColor="#FFFFFF"
-                        app:strokeWidth="1dp"
-                        app:backgroundTint="@android:color/transparent"
-                        app:cornerRadius="20dp" />
+                        <!-- Skip Button -->
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnSkip"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="40dp"
+                            android:layout_weight="1"
+                            android:text="SKIP"
+                            android:textSize="11sp"
+                            android:textStyle="bold"
+                            android:textColor="#FFFFFF"
+                            app:strokeColor="#FFFFFF"
+                            app:strokeWidth="1dp"
+                            app:backgroundTint="@android:color/transparent"
+                            app:cornerRadius="20dp" />
+                    </LinearLayout>
                 </LinearLayout>
 
             </LinearLayout>
