@@ -53,15 +53,6 @@
                 android:textColor="@color/text_secondary"
                 android:layout_marginEnd="8dp" />
 
-            <!-- Settings Button -->
-            <ImageButton
-                android:id="@+id/btnSettings"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:src="@android:drawable/ic_menu_manage"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Settings"
-                android:tint="@color/text_secondary" />
         </LinearLayout>
 
         <!-- Location Label -->

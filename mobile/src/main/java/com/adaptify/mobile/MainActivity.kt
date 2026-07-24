@@ -193,9 +193,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupButtons() {
-        binding.btnSettings.setOnClickListener {
-            startActivity(Intent(this, SettingsActivity::class.java))
-        }
         binding.btnBrowseMusic.setOnClickListener {
             startActivity(Intent(this, MusicBrowserActivity::class.java))
         }
