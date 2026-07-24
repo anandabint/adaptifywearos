@@ -81,14 +81,14 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/tabExercise"
-                style="@style/Widget.Material3.Button"
+                style="@style/Widget.Material3.Button.OutlinedButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="AKTIVITAS TINGGI"
                 android:textSize="12sp"
                 android:textStyle="bold"
-                android:textColor="@color/surface_white"
-                app:backgroundTint="@color/text_dark"
+                android:textColor="@color/text_gray"
+                app:strokeColor="@color/text_gray"
                 app:cornerRadius="20dp"
                 android:layout_marginEnd="8dp"
                 android:paddingHorizontal="24dp" />

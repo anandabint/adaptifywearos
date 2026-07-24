@@ -43,16 +43,6 @@
                     android:textColor="@color/text_secondary"
                     android:letterSpacing="0.1" />
             </LinearLayout>
-
-            <!-- Language Selector -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="ID | EN"
-                android:textSize="12sp"
-                android:textColor="@color/text_secondary"
-                android:layout_marginEnd="8dp" />
-
         </LinearLayout>
 
         <!-- Location Label -->
@@ -378,9 +368,8 @@
 
                     <!-- Adaptive Toggle -->
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:orientation="horizontal"
                         android:gravity="center_vertical">
 
@@ -404,6 +393,12 @@
                             android:layout_height="wrap_content"
                             android:checked="true" />
                     </LinearLayout>
+
+                    <!-- Spacer -->
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:layout_weight="1" />
 
                     <!-- Play/Pause Button -->
                     <!-- Play/Pause Button -->

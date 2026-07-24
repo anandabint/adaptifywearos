@@ -91,7 +91,6 @@ class MusicPickerActivity : AppCompatActivity() {
         listOf(tabExercise, tabLowActivity, tabRelax).forEach { tab ->
             tab.setTextColor(getColor(R.color.text_gray))
             tab.strokeColor = android.content.res.ColorStateList.valueOf(getColor(R.color.text_gray))
-            tab.backgroundTintList = null
         }
 
         val activeTab = when (mode) {
@@ -99,9 +98,8 @@ class MusicPickerActivity : AppCompatActivity() {
             "LOW_ACTIVITY" -> tabLowActivity
             else -> tabRelax
         }
-        activeTab.setTextColor(getColor(R.color.surface_white))
-        activeTab.backgroundTintList =
-            android.content.res.ColorStateList.valueOf(getColor(R.color.text_dark))
+        activeTab.setTextColor(getColor(R.color.text_dark))
+        activeTab.strokeColor = android.content.res.ColorStateList.valueOf(getColor(R.color.text_dark))
 
         updateUI()
     }
