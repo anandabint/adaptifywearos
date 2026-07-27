@@ -1,7 +1,19 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+}
+
+// Watch app uses its own key alias inside the same release keystore used by the mobile
+// app (release/adaptify-release.jks), kept in a separate properties file so the watch
+// module doesn't need to share the mobile app's key alias/password.
+val keystorePropertiesFile = rootProject.file("release/keystore-watch.properties")
+val keystoreProperties = Properties()
+val hasKeystoreProperties = keystorePropertiesFile.exists()
+if (hasKeystoreProperties) {
+    keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
 }
 
 android {
@@ -21,6 +33,17 @@ android {
 
     }
 
+    signingConfigs {
+        if (hasKeystoreProperties) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -28,6 +51,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            if (hasKeystoreProperties) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
     compileOptions {
@@ -41,6 +67,12 @@ android {
 }
 
 dependencies {
+    // Explicit modern Fragment version — some transitive dependency pulls an old
+    // Fragment (<1.3.0) which fails lintVitalRelease's InvalidFragmentVersionForActivityResult
+    // check against the registerForActivityResult() call in MainActivity. This forces
+    // Gradle's conflict resolution to pick a compliant version without touching
+    // MainActivity's permission-handling code.
+    implementation("androidx.fragment:fragment-ktx:1.8.5")
     implementation(libs.play.services.wearable)
     implementation(libs.health.services.client)
     implementation(platform(libs.compose.bom))
